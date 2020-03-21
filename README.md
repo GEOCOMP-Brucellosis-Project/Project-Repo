@@ -18,3 +18,11 @@ https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environme
 
 
 When we're writing code lets just keep each other updated if we use a new package in the project. 
+
+
+
+## EarthEngine Credentials
+
+When you call ee.Initialize() it searches for a credentials file on your computer. If you use mine, then I think you should be able to access my assets (like the iran shapefile.)
+Otherwise we might need to use different code for this part, since earth engine only plays nicely with "assets" hosted on earth engine. You can try putting the credentials file
+in the spot shown on the screenshot. 
