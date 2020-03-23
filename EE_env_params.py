@@ -64,11 +64,13 @@ for feature in features:
 
 envParams=pandas.DataFrame(cols) #creates a new pandas dataframe with the data in cols
 
+envParams.to_csv(r'envParams.csv',index = False)
 
-#one issue so far: unmatched county names
-s1=set(animal_data.County)
-s2=set(envParams.ADM2_EN)
-matched = s1.intersection(s2) 
-unmatched = s1.symmetric_difference(s2)
-len(matched)
-len(unmatched)
+
+# #one issue so far: unmatched county names
+# s1=set(animal_data.County)
+# s2=set(envParams.ADM2_EN)
+# matched = s1.intersection(s2) 
+# unmatched = s1.symmetric_difference(s2)
+# len(matched)
+# len(unmatched)
