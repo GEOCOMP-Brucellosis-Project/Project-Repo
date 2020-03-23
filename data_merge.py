@@ -8,6 +8,9 @@ Created on Tue Mar  3 13:04:02 2020
 
 import pandas as pd
 import geopandas as gpd
+import fiona
+import folium
+import json
 
 ## Read data from GitHub repository
 url = 'https://raw.githubusercontent.com/GEOCOMP-Brucellosis-Project/Project-Repo/master/'
@@ -30,6 +33,43 @@ animal_data['year'] = '20' + animal_data['time_g'].str.slice(-2)
 ## Read in human data
 human_data = pd.read_csv(url + '/Data/Human_Brucellosis_09_11.csv')
 
+#%% Basic Visualization
+
+## This section creates a folium map of iran with animal barn sites
+## as points. Just to get a sense of what we're dealing with.
+
+## Read in shapefile
+fh = fiona.open(fp + '/Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp', 'r')
+
+## Create base map of Iran
+m = folium.Map(location=[33, 53], zoom_start=6)
+
+## Add province(?) polygons to map
+for f in fh:
+    
+    j = json.dumps(f)
+    folium.features.GeoJson(j).add_to(m)
+
+## Get animal barn site coordinates
+points = animal_data[['lat','long']]
+
+## Iterate through coordinates and plot on map. (Takes a bit - lots of points)
+for point in range(len(points)):
+    
+    lat = points.iloc[point]['lat']
+    long = points.iloc[point]['long']
+    
+    folium.CircleMarker(location=[lat, long],
+                        radius=1,
+                        color='red').add_to(m)
+
+## Save html output
+m.save(fp + '/Iran_test.html')
+
+fh.close()
+
+#%%
+
 ## NEXT:
 ## Merge human data on county shapefile by centroid location to get county names
 ## Aggregate animal data to county level and monthly period
@@ -40,17 +80,3 @@ gpd.read_file(url + 'Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
 
 
 
-
-
-
-
-
-
-#%% This section is just for random checks/calculations - not intended for inclusion in final code
-
-## Some checks on the sparsity of our data
-test = merged_data[merged_data['province'].isin(['Zanjan', 'Kordestan', 'Hamadan', 'Kermanshah'])]
-
-## We have 12 observations with BOTH animal infection and human data
-## We have 32 total observations with an animal infection
-test[test['n_infected']>0].count()
