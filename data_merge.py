@@ -32,10 +32,10 @@ human_data = pd.read_csv(url + '/Data/Human_Brucellosis_09_11.csv')
 
 ## NEXT:
 ## Merge human data on county shapefile by centroid location to get county names
-## Aggregate animal data to county level
+## Aggregate animal data to county level and monthly period
 ## Join human and animal data at county level
 
-gpd.read_file(url + 'Iran_shp')
+gpd.read_file(url + 'Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
 
 
 
