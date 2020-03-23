@@ -14,6 +14,10 @@ import json
 
 ## Read data from GitHub repository
 url = 'https://raw.githubusercontent.com/GEOCOMP-Brucellosis-Project/Project-Repo/master/'
+
+## Filepath for local files
+fp = '/Users/finnroberts/Minnesota/2020_Spring/GEOG5541/Group/Project-Repo'
+
 animal_data = pd.read_csv(url + '/Data/animal_vac_data.csv')
 
 ## Update column names
