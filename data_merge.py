@@ -72,14 +72,30 @@ m.save(fp + '/Iran_test.html')
 
 fh.close()
 
-#%%
+#%% Merging
 
 ## NEXT:
 ## Merge human data on county shapefile by centroid location to get county names
 ## Aggregate animal data to county level and monthly period
 ## Join human and animal data at county level
 
-gpd.read_file(url + 'Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
+## For some reason cannot get this to work using .shp straight from github
+iran_data = gpd.read_file(fp + '/Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
+
+## Subset columns
+iran_data = iran_data[['ADM1_EN','Shape_Leng','Shape_Area','geometry']]
+
+## Get centroids of each feature in shapefile
+iran_data['centroid'] = iran_data.centroid
+
+## It appears the centroids in the human_data are not in lat/lon units
+## Clarify this with Mohsen.
+
+
+
+
+
+
 
 
 
