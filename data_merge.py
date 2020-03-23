@@ -7,10 +7,11 @@ Created on Tue Mar  3 13:04:02 2020
 """
 
 import pandas as pd
+import geopandas as gpd
 
 ## Read data from GitHub repository
-url = 'https://raw.githubusercontent.com/GEOCOMP-Brucellosis-Project/Project-Repo/master/Data/'
-animal_data = pd.read_csv(url + 'animal_vac_data.csv')
+url = 'https://raw.githubusercontent.com/GEOCOMP-Brucellosis-Project/Project-Repo/master/'
+animal_data = pd.read_csv(url + '/Data/animal_vac_data.csv')
 
 ## Update column names
 animal_data.columns = [
@@ -27,13 +28,14 @@ animal_data['animal_inf_rate'] = animal_data['n_infected']/animal_data['n_sample
 animal_data['year'] = '20' + animal_data['time_g'].str.slice(-2)
 
 ## Read in human data
-human_data = pd.read_csv(url + 'Human_Brucellosis_09_11.csv')
+human_data = pd.read_csv(url + '/Data/Human_Brucellosis_09_11.csv')
 
 ## NEXT:
 ## Merge human data on county shapefile by centroid location to get county names
 ## Aggregate animal data to county level
 ## Join human and animal data at county level
 
+gpd.read_file(url + 'Iran_shp')
 
 
 
