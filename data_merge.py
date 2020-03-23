@@ -29,10 +29,10 @@ animal_data['year'] = '20' + animal_data['time_g'].str.slice(-2)
 ## Read in human data
 human_data = pd.read_csv(url + 'Human_Brucellosis_09_11.csv')
 
-## Merge data on ID key - I don't think this is right. Need to discuss proper merge key
-merged_data = animal_data.merge(human_data, how='outer', left_on=['id'], right_on=['ID'])
-
-
+## NEXT:
+## Merge human data on county shapefile by centroid location to get county names
+## Aggregate animal data to county level
+## Join human and animal data at county level
 
 
 
