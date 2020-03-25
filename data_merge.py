@@ -121,8 +121,14 @@ for r in range(len(human_data)):
                         radius=1,
                         color='red').add_to(m)
     
-m.save('/Users/finnroberts/Desktop/human_map.html')
+# m.save('/Users/finnroberts/Desktop/human_map.html')
 
 ## Spatial join? Cannot figure out why this isn't working.
-## Someone should try on their machine to see if the problem is on my end.
+## It may be because it seems that perhaps none of the centroid locations are contained
+## within the iran_data polygons. The map above suggests that they are - something's up...
 joined_data = gpd.sjoin(iran_data, human_data_geo)
+
+    
+    
+
+
