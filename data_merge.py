@@ -99,24 +99,19 @@ human_data['centroid_lat'] = utm39Proj(human_data['X_Centroid'].values, human_da
 human_data_geo = gpd.GeoDataFrame(human_data, geometry = gpd.points_from_xy(human_data['centroid_lat'], human_data['centroid_lon']))
 human_data_geo.crs = 'EPSG:4326'
 
-## Spatial join? Cannot figure out why this isn't working.
-## Someone should try on their machine to see if the problem is on my end.
-gpd.sjoin(iran_data, human_data_geo)
-
-
-#%%
-
+## Just ensuring centroid locations seem reasonable
 fh = fiona.open(fp + '/Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp', 'r')
 
 ## Base map
 m = folium.Map(location=[33, 53], zoom_start=6)
 
-## Add province(?) polygons to map
+## Add province polygons
 for f in fh:
     
     j = json.dumps(f)
     folium.features.GeoJson(j).add_to(m)
     
+## Add human data centroid locations (counties)
 for r in range(len(human_data)):
     
     lat = human_data['centroid_lat'][r]
@@ -127,3 +122,7 @@ for r in range(len(human_data)):
                         color='red').add_to(m)
     
 m.save('/Users/finnroberts/Desktop/human_map.html')
+
+## Spatial join? Cannot figure out why this isn't working.
+## Someone should try on their machine to see if the problem is on my end.
+joined_data = gpd.sjoin(iran_data, human_data_geo)
