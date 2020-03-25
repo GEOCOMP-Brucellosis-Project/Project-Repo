@@ -89,7 +89,7 @@ iran_data = gpd.read_file(fp + '/Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
 iran_data = iran_data[['ADM1_EN','Shape_Leng','Shape_Area','geometry']]
 
 ## Define projection for UTM 39N/WGS84 coordinates
-utm39Proj = pyproj.Proj("+proj=utm +zone=39N, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+utm39Proj = pyproj.Proj(proj = 'utm', zone = 39, ellps = 'WGS84')
 
 ## Project UTM 39N centroids to lat/lon
 human_data['centroid_lat'] = utm39Proj(human_data['X_Centroid'].values, human_data['Y_Centroid'].values, inverse = True)[0]
@@ -103,3 +103,22 @@ human_data_geo.crs = 'EPSG:4326'
 ## Someone should try on their machine to see if the problem is on my end.
 gpd.sjoin(iran_data, human_data_geo)
 
+
+#%%
+## Something appears to be wrong with the centroid locations in the
+## human data csv file. Confirm centroid units with Mohsen? Probably my
+## poor projection understanding.
+
+## Base map
+m = folium.Map(location=[33, 53], zoom_start=6)
+
+for r in range(len(human_data)):
+    
+    lat = human_data['centroid_lat'][r]
+    lon = human_data['centroid_lon'][r]
+    
+    folium.CircleMarker(location=[lat, lon],
+                        radius=1,
+                        color='red').add_to(m)
+    
+m.save('/Users/finnroberts/Desktop/human_map.html')
