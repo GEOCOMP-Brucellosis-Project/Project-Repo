@@ -12,6 +12,8 @@ import fiona
 import folium
 import json
 import pyproj
+import shapely
+import rtree
 
 ## Read data from GitHub repository
 url = 'https://raw.githubusercontent.com/GEOCOMP-Brucellosis-Project/Project-Repo/master/'
@@ -69,7 +71,7 @@ for point in range(len(points)):
                         color='red').add_to(m)
 
 ## Save html output
-m.save(fp + '/Iran_test.html')
+# m.save(fp + '/Iran_test.html')
 
 fh.close()
 
@@ -86,9 +88,6 @@ iran_data = gpd.read_file(fp + '/Iran_shp/irn_admbnda_adm1_unhcr_20190514.shp')
 ## Subset columns
 iran_data = iran_data[['ADM1_EN','Shape_Leng','Shape_Area','geometry']]
 
-## Get centroids of each feature in shapefile
-iran_data['centroid'] = iran_data.centroid
-
 ## Define projection for UTM 39N/WGS84 coordinates
 utm39Proj = pyproj.Proj("+proj=utm +zone=39N, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
 
@@ -96,6 +95,11 @@ utm39Proj = pyproj.Proj("+proj=utm +zone=39N, +south +ellps=WGS84 +datum=WGS84 +
 human_data['centroid_lat'] = utm39Proj(human_data['X_Centroid'].values, human_data['Y_Centroid'].values, inverse = True)[0]
 human_data['centroid_lon'] = utm39Proj(human_data['X_Centroid'].values, human_data['Y_Centroid'].values, inverse = True)[1]
 
+## Convert human data to geodataframe
+human_data_geo = gpd.GeoDataFrame(human_data, geometry = gpd.points_from_xy(human_data['centroid_lat'], human_data['centroid_lon']))
+human_data_geo.crs = 'EPSG:4326'
 
-
+## Spatial join? Cannot figure out why this isn't working.
+## Someone should try on their machine to see if the problem is on my end.
+gpd.sjoin(iran_data, human_data_geo)
 
