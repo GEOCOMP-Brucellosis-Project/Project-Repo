@@ -103,16 +103,14 @@ matched_df['name_match'] = matched_df['name_dist'] == matched_df['name_ratio']
 ## Can be highly confident when nameMatch = True, ratio > .75 - this matches 145 of the 192 that need matches
 matched_df['matched'] = np.where((matched_df['name_match'] == True) & (matched_df['ratio'] > .75), matched_df['name_dist'], 'NULL')
        
-## Which leaves these 26 remaining unmatched names
-## These COULD be matched to one of the proposed names
+## These names are still unmatched but their proposed names haven't yet been taken
 ## Visual inspection suggests the name_dist is the right match in all these cases - so we go with that
 matched_df.loc[
     ((matched_df['name_dist'].isin(matched_df['matched']) == False) & ((matched_df['name_ratio'].isin(matched_df['matched']) == False))) & (matched_df['matched'] == 'NULL'), 
     'matched'] = matched_df['name_dist']
 
-## We're left with these names, which are definitely wrong
-## Their proposed matches have already been taken (21 names)
-## Will have to do by hand
+## We're left with these names, which are definitely wrong (21 names)
+## Their proposed matches have already been taken - will have to do by hand
 match_by_hand = matched_df.loc[matched_df['matched']=='NULL']
 
 
