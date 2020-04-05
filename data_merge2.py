@@ -42,7 +42,7 @@ animal_data_grp = animal_data.groupby(['county', 'year', 'month'], as_index = Fa
 animal_data_grp['animal_inf_rate'] = animal_data_grp['n_infected']/animal_data['n_sample']
 
 ## Read in Iran data
-## This is what doesn't wory from github...
+## This is what doesn't work from github...
 #iran_data = gpd.read_file(os.path.join(url, 'Iran_shp', 'iran_admin.shp'))
 iran_data = gpd.read_file(fp + '/Iran_shp/iran_admin.shp')
 
@@ -66,7 +66,7 @@ human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', r
 ## Takes two pandas series, calculates Levenshtein distance to identify potential matches
 def match_names(s1, s2):
     
-    ## Testing levenshtein distance method
+    ## Calculate Levenshtein distance and ratio
     dists = np.array([leven.distance(name1, name2) for name1 in s1 for name2 in s2])
     ratios = np.array([leven.ratio(name1, name2) for name1 in s1 for name2 in s2])
     
