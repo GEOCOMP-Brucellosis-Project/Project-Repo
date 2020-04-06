@@ -55,7 +55,7 @@ human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_
 
 ## Left join human data to spatial data
 ## Gives us a fair amount of missing matches...
-human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
+# human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
 
 #%%
 
@@ -64,6 +64,7 @@ human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', r
 
 ## Function to match potential misspelled strings
 ## Takes two pandas series, calculates Levenshtein distance to identify potential matches
+## Used in the likely_matches function
 def match_names(s1, s2):
     
     ## Calculate Levenshtein distance and ratio
@@ -82,60 +83,78 @@ def match_names(s1, s2):
     
     return(matches)
 
-## Investigating our data with this method ##
+## Function to return highly probable string matches - the rest will have to be done manually
+## Depends on match_names function
+def likely_matches(s1, s2):
+    
+    ## Unique values in each series
+    vals1 = s1.unique()
+    vals2 = s2.unique()
+    
+    ## Unique values in series 1 that aren't in series 2
+    unique1 = pd.Series(np.setdiff1d(vals1, vals2))
+    
+    ## Unique values in series 2 that aren't in series 1
+    unique2 = pd.Series(np.setdiff1d(vals2, vals1))
+    
+    ## Create dataframe recording potential name matches
+    matched = match_names(unique1, unique2)
+    
+    ## Add column recording whether distance and ratio identify the same match
+    matched['name_match'] = (matched['name_dist'] == matched['name_ratio'])
+    
+    ## Can be highly confident when nameMatch = True, ratio > .75 - this matches 145 of the 192 that need matches
+    matched['matched'] = np.where((matched['name_match'] == True) & (matched['ratio'] > .75), matched['name_dist'], 'NULL')
+           
+    return(matched)
+    
+#%%
 
-## Subset to unique county names in each file
-shp_counties = iran_data['county_en'].unique()
-csv_counties = human_data['County'].unique()
+######################################
+## Cleaning our data's county names ##
 
-## Unique values in shapefile that aren't in human_data
-shp_ct_unique = pd.Series(np.setdiff1d(shp_counties, csv_counties))
+matched_df = likely_matches(iran_data['county_en'], human_data['County'])
 
-## Unique values in csv file that aren't in shapefile
-csv_ct_unique = pd.Series(np.setdiff1d(csv_counties, shp_counties))
-
-## Create dataframe recording potential name matches
-matched_df = match_names(shp_ct_unique, csv_ct_unique)
-
-## Add column recording whether distance and ratio identify the same match
-matched_df['name_match'] = matched_df['name_dist'] == matched_df['name_ratio']
-
-## Can be highly confident when nameMatch = True, ratio > .75 - this matches 145 of the 192 that need matches
-matched_df['matched'] = np.where((matched_df['name_match'] == True) & (matched_df['ratio'] > .75), matched_df['name_dist'], 'NULL')
-       
 ## These names are still unmatched but their proposed names haven't yet been taken
 ## Visual inspection suggests the name_dist is the right match in all these cases - so we go with that
 matched_df.loc[
-    ((matched_df['name_dist'].isin(matched_df['matched']) == False) & ((matched_df['name_ratio'].isin(matched_df['matched']) == False))) & (matched_df['matched'] == 'NULL'), 
+    ((matched_df['name_dist'].isin(matched_df['matched']) == False) & 
+     ((matched_df['name_ratio'].isin(matched_df['matched']) == False))) & 
+    (matched_df['matched'] == 'NULL'), 
     'matched'] = matched_df['name_dist']
 
 ## We're left with these names, which are definitely wrong (21 names)
 ## Their proposed matches have already been taken - will have to do by hand
 match_by_hand = matched_df.loc[matched_df['matched']=='NULL']
 
+## Will need to match manually here
+##
+##
 
-## Next:
-## Match last 21 names manually somehow? - cross reference final 'matched' column with all the names in the original csv/shp files to see if there are as-yet unmmatched potential names
-## Reduce matched_df to a series of name pairs
-## in the human_data, map county names to their partners in this matching series just using a join
-## Rejoin human_data with spatial data using this updated county name column
-## Could also wrap some of the above matching code in another function - output would be 'matched_pairs' series
-
+## Prepare matched names for joining on human data
 matched_pairs = matched_df['matched'].reset_index()
 matched_pairs.columns = ['county_shp', 'matched']
 
+## Join matched names on human data to get a column of county names compatible with the shapefile
 human_data2 = pd.merge(matched_pairs, human_data, how = 'right', left_on = 'matched', right_on = 'County')
 
-## wherever county_shp and matched are null, just fill in both with the associated county name
-## These are the values that already matched in the shp and csv before all this stuff
+## Wherever county_shp and matched are null, just fill in both with the associated county name
+## (These are the values that were the same in the csv and shp from the beginning)
 human_data2.loc[(human_data2['county_shp'].isnull()), 'county_shp'] = human_data2['County']
 
+## Join updated human data on shapefile
 human_sp_data = human_data2.merge(iran_data, how = 'outer', left_on = 'county_shp', right_on = 'county_en')
 
+
+## Next:
+## Deal with manual matches
+## Cross reference final 'matched' column with all the names in the original csv/shp files to see if there are as-yet unmmatched potential names
+## Double check some earlier matches - they may not all be correct
 
 
 
 #%%
 
 ## Also - some places that did merge have different provinces? Double check this once names are updated
-human_sp_data[['County', 'county_en', 'Province', 'province_en']].loc[human_sp_data['county_en'].isnull()]
+# human_sp_data[['County', 'county_en', 'Province', 'province_en']].loc[human_sp_data['county_en'].isnull()]
+
