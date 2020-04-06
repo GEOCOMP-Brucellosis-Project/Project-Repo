@@ -115,11 +115,23 @@ match_by_hand = matched_df.loc[matched_df['matched']=='NULL']
 
 
 ## Next:
-## Match last 21 names manually somehow?
+## Match last 21 names manually somehow? - cross reference final 'matched' column with all the names in the original csv/shp files to see if there are as-yet unmmatched potential names
 ## Reduce matched_df to a series of name pairs
 ## in the human_data, map county names to their partners in this matching series just using a join
 ## Rejoin human_data with spatial data using this updated county name column
-## Could also wrap some of the above matching code in another function
+## Could also wrap some of the above matching code in another function - output would be 'matched_pairs' series
+
+matched_pairs = matched_df['matched'].reset_index()
+matched_pairs.columns = ['county_shp', 'matched']
+
+human_data2 = pd.merge(matched_pairs, human_data, how = 'right', left_on = 'matched', right_on = 'County')
+
+## wherever county_shp and matched are null, just fill in both with the associated county name
+## These are the values that already matched in the shp and csv before all this stuff
+human_data2.loc[(human_data2['county_shp'].isnull()), 'county_shp'] = human_data2['County']
+
+human_sp_data = human_data2.merge(iran_data, how = 'outer', left_on = 'county_shp', right_on = 'county_en')
+
 
 
 
