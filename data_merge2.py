@@ -65,23 +65,40 @@ human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_
 ## Function to match potential misspelled strings
 ## Takes two pandas series, calculates Levenshtein distance to identify potential matches
 ## Used in the likely_matches function
-def match_names(s1, s2):
+def match_names(s1, s2, as_df = True):
+    
+    s1 = s1.unique()
+    s2 = s2.unique()
     
     ## Calculate Levenshtein distance and ratio
     dists = np.array([leven.distance(name1, name2) for name1 in s1 for name2 in s2])
     ratios = np.array([leven.ratio(name1, name2) for name1 in s1 for name2 in s2])
-    
+        
     ## Reshape and convert to df so we can identify which values are for which name combo
     dists_df = pd.DataFrame(data = dists.reshape(len(s1), len(s2)), index = s1, columns = s2)
     ratios_df = pd.DataFrame(data = ratios.reshape(len(s1), len(s2)), index = s1, columns = s2)
     
-    ## Get column names where min distance and max ratio occurs
-    matches = pd.DataFrame({'name_dist': dists_df.idxmin(axis = 1), 
-                            'name_ratio': ratios_df.idxmax(axis = 1), 
-                            'dist': dists_df.min(axis = 1), 
-                            'ratio': ratios_df.max(axis = 1)})
+    if as_df == True:
+        
+        ## Get column names where min distance and max ratio occurs
+        matches = pd.DataFrame({'name_dist': dists_df.idxmin(axis = 1), 
+                                'name_ratio': ratios_df.idxmax(axis = 1), 
+                                'dist': dists_df.min(axis = 1), 
+                                'ratio': ratios_df.max(axis = 1)})
     
-    return(matches)
+        return(matches)
+        
+    ## If user wants more detail, we can create a dictionary for each name that contains more graunlar info
+    ## This section creates a dictionary with names as keys and dataframes as values
+    ## Each dataframe contains all the possible name pairings (as opposed to above, which only supplies best possible values)
+    if as_df == False:
+        
+        ratios_dict = {name1: ratios_df.loc[name1].sort_values(ascending = False) for name1 in s1}
+        dists_dict = {name1: dists_df.loc[name1].sort_values() for name1 in s1}
+        
+        comb_dict = {name1: pd.merge(dists_dict[name1], ratios_dict[name1], left_index = True, right_index = True, suffixes=('_dist', '_ratio')) for name1 in s1}
+        
+        return(comb_dict)
 
 ## Function to return highly probable string matches - the rest will have to be done manually
 ## Depends on match_names function
@@ -102,7 +119,7 @@ def likely_matches(s1, s2):
     unique2 = pd.Series(np.setdiff1d(vals2, vals1))
     
     ## Create dataframe recording potential name matches
-    matched = match_names(unique1, unique2)
+    matched = match_names(unique1, unique2, as_df = True)
     
     ## Add column recording whether distance and ratio identify the same match
     matched['name_match'] = (matched['name_dist'] == matched['name_ratio'])
@@ -123,12 +140,13 @@ counties2 = iran_data['county_en'].str.capitalize()
 
 ## Create mapping of likely pairs
 matched_df = likely_matches(counties1, counties2)
+matched_dict = match_names(counties1, counties2, as_df = False)
 
 ## These names weren't auto-matched but their proposed matches seem right
 ## So we match them manually
 names = [
-    'Ali abad katul', 'Bafgh', 'Bandar qaz', 'Bile Savar', 
-    'Dailam', 'Eslam Abad Gharb', 'Gonbad  kavoos', 
+    'Ali abad katul', 'Bafgh', 'Bandar qaz', 'Bile savar', 
+    'Dailam', 'Eslam abad gharb', 'Gonbad  kavoos', 
     'Ijroud', 'Jovein', 'Mahvalat', 'Menojan', 
     'Neyshabur',  'Orzoieyeh', 'Ray', 'Tehran jonub', 
     'Tehran shomal', 'Tiran o karvan'
@@ -156,6 +174,20 @@ matched_df.loc[matched_df.index.isin(list(match_dict.keys())), 'matched'] = list
 ## So, we're left with these 17 names...
 matched_df.loc[(matched_df['matched'] == 'NULL')]
 
+## Records for still unmatched names - helpful for manual matching
+unmatched_names = matched_df[matched_df['matched'] == 'NULL'].index
+unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
+
+## Manual matching to go here:
+
+## But first, should include province info in the matching function since counties with same province are obviously more likely to match
+
+## Bandar mashahr: Mahshahr
+## Dore chagni: Doureh??
+## 
+##
+##
+
 ## Prepare matched names for joining on human data
 matched_pairs = matched_df['matched'].reset_index()
 matched_pairs.columns = ['county_csv', 'matched']
@@ -166,10 +198,16 @@ iran_data['county_en'] = iran_data['county_en'].str.capitalize()
 ## Join matched names on human data to get a column of county names compatible with the shapefile
 iran_data2 = pd.merge(matched_pairs, iran_data, how = 'outer', left_on = 'matched', right_on = 'county_en')
 
+## This might be easier to just do in a dictionary:
+## (could just assemble a dictionary of all names once matched and then coerce to df)
+
 ## Identify the names that matched precisely and fill them in manually 
 ## (these are deliberately not captured by the likely_names function to improve its performance)
 precise_matches = np.intersect1d(iran_data['county_en'], human_data['County'])
-iran_data2.loc[iran_data2['county_en'].isin(precise_matches) & (iran_data2['matched'].isna()), ['county_csv', 'matched']] = iran_data2['county_en']
+
+iran_data2.loc[iran_data2['county_en'].isin(precise_matches) & 
+               (iran_data2['matched'].isna()), 
+               ['county_csv', 'matched']] = iran_data2['county_en']
 
 ## Join updated human data on shapefile
 human_sp_data = iran_data2.merge(human_data, how = 'outer', left_on = 'county_csv', right_on = 'County')
@@ -185,6 +223,19 @@ human_sp_data = iran_data2.merge(human_data, how = 'outer', left_on = 'county_cs
 #### in likely_matches output to aid the user in finding matches manually)
 
 ## Deal with animal_data names.
+
+
+#%%
+
+#######################################
+## Cleaning animal data county names ##
+
+counties_ani = animal_data['county'].str.capitalize()
+
+ani_shp_match = likely_matches(counties_ani, counties2)
+
+ani_shp_match.loc[ani_shp_match['matched'] == 'NULL']
+
 
 #%%
 
