@@ -53,6 +53,10 @@ iran_data.columns = ['county_en', 'county_fa', 'province_en', 'province_fa', 'sh
 ## Read in human data
 human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_V2.csv')).drop(['Unnamed: 18', 'Unnamed: 19'], axis = 1)
 
+## Fix duplicate provinces
+human_data.loc[human_data['Province'] == 'Khorasan jonobi', 'Province'] = 'Khorasan Jonobi'
+human_data.loc[human_data['Province'] == 'Khorasan shomali', 'Province'] = 'Khorasan Shomali'
+
 ## Left join human data to spatial data
 ## Gives us a fair amount of missing matches...
 # human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
@@ -65,18 +69,36 @@ human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_
 ## Function to match potential misspelled strings
 ## Takes two pandas series, calculates Levenshtein distance to identify potential matches
 ## Used in the likely_matches function
-def match_names(s1, s2, as_df = True):
+def match_names(s1, s2, as_df = True, caps = True, unique = True):
     
-    s1 = s1.unique()
-    s2 = s2.unique()
+    s1 = pd.Series(s1)
+    s2 = pd.Series(s2)
+    
+    if caps == True:
+        
+        s1 = s1.str.capitalize()
+        s2 = s2.str.capitalize()
+    
+    ## Unique values in each series
+    vals1 = s1.unique()
+    vals2 = s2.unique()
+    
+    ## If unique argument is set to true, only match names that don't have already perfect match
+    if unique == True:
+        
+        ## Unique values in series 1 that aren't in series 2
+        vals1 = pd.Series(np.setdiff1d(vals1, vals2))
+    
+        ## Unique values in series 2 that aren't in series 1
+        vals2 = pd.Series(np.setdiff1d(vals2, vals1))
     
     ## Calculate Levenshtein distance and ratio
-    dists = np.array([leven.distance(name1, name2) for name1 in s1 for name2 in s2])
-    ratios = np.array([leven.ratio(name1, name2) for name1 in s1 for name2 in s2])
+    dists = np.array([leven.distance(name1, name2) for name1 in vals1 for name2 in vals2])
+    ratios = np.array([leven.ratio(name1, name2) for name1 in vals1 for name2 in vals2])
         
     ## Reshape and convert to df so we can identify which values are for which name combo
-    dists_df = pd.DataFrame(data = dists.reshape(len(s1), len(s2)), index = s1, columns = s2)
-    ratios_df = pd.DataFrame(data = ratios.reshape(len(s1), len(s2)), index = s1, columns = s2)
+    dists_df = pd.DataFrame(data = dists.reshape(len(vals1), len(vals2)), index = vals1, columns = vals2)
+    ratios_df = pd.DataFrame(data = ratios.reshape(len(vals1), len(vals2)), index = vals1, columns = vals2)
     
     if as_df == True:
         
@@ -93,33 +115,20 @@ def match_names(s1, s2, as_df = True):
     ## Each dataframe contains all the possible name pairings (as opposed to above, which only supplies best possible values)
     if as_df == False:
         
-        ratios_dict = {name1: ratios_df.loc[name1].sort_values(ascending = False) for name1 in s1}
-        dists_dict = {name1: dists_df.loc[name1].sort_values() for name1 in s1}
+        ratios_dict = {name1: ratios_df.loc[name1].sort_values(ascending = False) for name1 in vals1}
+        dists_dict = {name1: dists_df.loc[name1].sort_values() for name1 in vals1}
         
-        comb_dict = {name1: pd.merge(dists_dict[name1], ratios_dict[name1], left_index = True, right_index = True, suffixes=('_dist', '_ratio')) for name1 in s1}
+        comb_dict = {name1: pd.merge(dists_dict[name1], ratios_dict[name1], left_index = True, right_index = True, suffixes=('_dist', '_ratio')) for name1 in vals1}
         
         return(comb_dict)
 
 ## Function to return highly probable string matches - the rest will have to be done manually
 ## Depends on match_names function
 ## The index of the resulting df contains values from the *first* series passed to the function
-def likely_matches(s1, s2):
-    
-    s1 = pd.Series(s1)
-    s2 = pd.Series(s2)
-    
-    ## Unique values in each series
-    vals1 = s1.unique()
-    vals2 = s2.unique()
-    
-    ## Unique values in series 1 that aren't in series 2
-    unique1 = pd.Series(np.setdiff1d(vals1, vals2))
-    
-    ## Unique values in series 2 that aren't in series 1
-    unique2 = pd.Series(np.setdiff1d(vals2, vals1))
+def likely_matches(s1, s2, as_df = True, caps = True, unique = True):
     
     ## Create dataframe recording potential name matches
-    matched = match_names(unique1, unique2, as_df = True)
+    matched = match_names(s1, s2, as_df = as_df, caps = caps, unique = unique)
     
     ## Add column recording whether distance and ratio identify the same match
     matched['name_match'] = (matched['name_dist'] == matched['name_ratio'])
@@ -131,16 +140,51 @@ def likely_matches(s1, s2):
     
 #%%
 
-######################################
-## Cleaning our data's county names ##
+###############################
+## Cleaning our data's names ##
 
-## Capitlize strings to improve matching
-counties1 = human_data.loc[human_data['County'] != 'Null']['County'].str.capitalize()
-counties2 = iran_data['county_en'].str.capitalize()
+## Province Matching
+    
+provs1 = human_data.loc[human_data['Province'] != 'Null']['Province']
+provs2 = iran_data['province_en']
+
+likely_matches(provs1, provs2, caps = False)
+match_names(provs1, provs2, as_df = False, caps = False, unique = True)
+
+## Province matchings - this accounts for all discrepancies
+match_dict_prov = {
+    'West Azerbaijan':'Azarbaijan Gharbi',
+    'East Azerbaijan':'Azarbaijan Sharghi',
+    'Chaharmahal and Bakhtiari':'Chaharmahal & bakhtiari',
+    'Isfahan':'Esfahan',
+    'South Khorasan':'Khorasan Jonobi',
+    'North Khorasan':'Khorasan Shomali',
+    'Razavi Khorasan':'Khorasan Razavi',
+    'Kohgiluyeh and Boyer-Ahmad':'Kohgiluyeh & Boyerahmad',
+    'Kurdistan':'Kordestan',
+    'Sistan and Baluchestan':'Sistan & Bluchestan'
+              }
+
+## Invert dictionary
+match_dict_prov = {v: k for k, v in match_dict_prov.items()}
+
+## Update province names in human data with dictionary mappings
+human_data['Province'] = human_data['Province'].map(match_dict_prov).fillna(human_data['Province'])
+
+
+#%%
+
+## County Matching
+
+## Remove null values for matching
+counties1 = human_data.loc[human_data['County'] != 'Null']['County']
+counties2 = iran_data['county_en']
 
 ## Create mapping of likely pairs
 matched_df = likely_matches(counties1, counties2)
 matched_dict = match_names(counties1, counties2, as_df = False)
+
+matched_df[matched_df['matched'] == 'NULL']
 
 ## These names weren't auto-matched but their proposed matches seem right
 ## So we match them manually
@@ -167,11 +211,15 @@ match_dict = {
     'Tehran gharb':'Tehran',
     'Tehran shargh':'Tehran',
     'Tehran shomal qarb':'Tehran',
+    'Zaveh':'Zave',
+    'Bandar mahshahr':'Mashahr',
+    'Kalale':'Kolaleh',
+    'Qale ganj':'Ghaleye-ganj'
               }
 
 matched_df.loc[matched_df.index.isin(list(match_dict.keys())), 'matched'] = list(match_dict.values())
 
-## So, we're left with these 17 names...
+## So, we're left with these 16 names...
 matched_df.loc[(matched_df['matched'] == 'NULL')]
 
 ## Records for still unmatched names - helpful for manual matching
@@ -180,13 +228,32 @@ unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
 
 ## Manual matching to go here:
 
-## But first, should include province info in the matching function since counties with same province are obviously more likely to match
 
-## Bandar mashahr: Mahshahr
-## Dore chagni: Doureh??
-## 
-##
-##
+
+
+
+
+
+## But first, should include province info in the matching function since counties with same province are obviously more likely to match
+cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
+cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
+
+## need to update this to include matched provinces
+def prov_matcher(name):
+    
+    cty_prov_csv['County'] = cty_prov_csv['County'].str.capitalize()
+    cty_prov_shp['county_en'] = cty_prov_shp['county_en'].str.capitalize()
+    
+    province = cty_prov_csv.loc[cty_prov_csv['County'] == name]['Province'].iloc[0]
+    
+    poss_matches = cty_prov_shp[cty_prov_shp['province_en'] == province]
+
+    return(poss_matches)
+
+prov_matcher('Zarghan')
+
+## Dore chagni: Doureh? Dorud?
+
 
 ## Prepare matched names for joining on human data
 matched_pairs = matched_df['matched'].reset_index()
