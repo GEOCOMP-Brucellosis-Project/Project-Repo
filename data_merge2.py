@@ -237,7 +237,7 @@ match_dict_man = {
     'Tehran Shargh':'Tehran',
     'Tehran Shomal Qarb':'Tehran',
     'Zaveh':'Zave',
-    'Bandar Mahshahr':'Mashahr',
+    'Bandar Mahshahr':'Mahshahr',
     'Qale ganj':'Ghaleye-Ganj'
               }
 
@@ -251,31 +251,25 @@ match_dict_cty.update(dict(zip(perf_matches, perf_matches)))
 ## Map names in dataframe based on dictionary
 human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_data['County'])
 
+## Joining ##
+human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
 
+#%%
 
-## QUALITY ASSURANCE NOTES
+## QUALITY ASSURANCE ##
+
+## Notes:
 
 ## I think zaboli should NOT be mapped to Zabol - fix manually?
+## Should heck to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
 
-#%%
+## Remaining names - could useful for QA
+#rev_dict = {v: k for k, v in match_dict_cty.items()}
+#unmatched = set(human_data['County'].unique()).difference(set(rev_dict.keys()))
 
-rev_dict = {v: k for k, v in match_dict_cty.items()}
+## This is potentially useful during QA phase - otherwise can be deleted
 
-
-test = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
-
-test = test[['County','Province','county_en','province_en']]
-
-## QA -  check to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
-
-
-
-
-
-
-
-#%%
-
+'''
 ## But first, should include province info in the matching function since counties with same province are obviously more likely to match
 cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
 cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
@@ -299,57 +293,7 @@ prov_matcher('Zarghan')
 
 ## Update county names here:
 
-
-
-
-
-
-
-
-
-
-
-## Don't use this ugly method - delete once matching is working
-#matched_df.loc[matched_df.index.isin(list(match_dict.keys())), 'matched'] = list(match_dict.values())
-
-## So, we're ultimately left with these names...
-matched_df.loc[(matched_df['matched'] == 'NULL')]
-
-## Records for still unmatched names - helpful for manual matching
-unmatched_names = matched_df[matched_df['matched'] == 'NULL'].index
-unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
-
-
-
-
-#%%
-
-## JOINING ##
-
-## Prepare matched names for joining on human data
-matched_pairs = matched_df['matched'].reset_index()
-matched_pairs.columns = ['county_csv', 'matched']
-
-## Capitalize so join works properly
-iran_data['county_en'] = iran_data['county_en'].str.capitalize()
-
-## Join matched names on human data to get a column of county names compatible with the shapefile
-iran_data2 = pd.merge(matched_pairs, iran_data, how = 'outer', left_on = 'matched', right_on = 'county_en')
-
-## This might be easier to just do in a dictionary:
-## (could just assemble a dictionary of all names once matched and then coerce to df)
-
-## Identify the names that matched precisely and fill them in manually 
-## (these are deliberately not captured by the likely_names function to improve its performance)
-precise_matches = np.intersect1d(iran_data['county_en'], human_data['County'])
-
-iran_data2.loc[iran_data2['county_en'].isin(precise_matches) & 
-               (iran_data2['matched'].isna()), 
-               ['county_csv', 'matched']] = iran_data2['county_en']
-
-## Join updated human data on shapefile
-human_sp_data = iran_data2.merge(human_data, how = 'outer', left_on = 'county_csv', right_on = 'County')
-
+'''
 
 #%%
 
