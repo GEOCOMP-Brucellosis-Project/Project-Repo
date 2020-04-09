@@ -195,7 +195,7 @@ counties1 = human_data.loc[human_data['County'] != 'Null']['County']
 counties2 = iran_data['county_en']
 
 ## Create mapping of likely pairs
-matched_df = likely_matches(counties1, counties2)
+matched_df = likely_matches(counties1, counties2, 0.751)
 #match_names(counties1, counties2, as_df = False)
 
 matched_df[matched_df['matched'] == 'NULL']
@@ -232,7 +232,6 @@ match_dict_man = {
     'Gilan Qarb':'Gilan-e-Gharb',
     'Kharame':'Kherameh',
     'Maraqe':'Maragheh',
-    'Mashhad Morghab':'Mashhad',
     'Tehran Gharb':'Tehran',
     'Tehran Shargh':'Tehran',
     'Tehran Shomal Qarb':'Tehran',
@@ -248,6 +247,9 @@ match_dict_cty.update(match_dict_man) ## This now has all automatched names and 
 perf_matches = np.intersect1d(iran_data['county_en'], human_data['County'])
 match_dict_cty.update(dict(zip(perf_matches, perf_matches)))
 
+## Remove incorrect match for zaboli
+del match_dict_cty['zaboli']
+
 ## Map names in dataframe based on dictionary
 human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_data['County'])
 
@@ -256,64 +258,56 @@ human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County
 
 #%%
 
+## QUALITY ASSURANCE NOTES ##
 
-## Beyond this is all notes and scribbles - All code above this should be good though
-
-## QUALITY ASSURANCE ##
-
-## Notes:
-
-## I think zaboli should NOT be mapped to Zabol - fix manually?
-## Should check to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
-
-## Need to figure out what to do with last unmatched names and also crowdsource an effort to find errors
-## in what has already been matched
-
-
-
-
-## Remaining names - could useful for QA
-#rev_dict = {v: k for k, v in match_dict_cty.items()}
-#unmatched = set(human_data['County'].unique()).difference(set(rev_dict.keys()))
-
-## This is potentially useful during QA phase - otherwise can be deleted
-
-'''
-## But first, should include province info in the matching function since counties with same province are obviously more likely to match
-cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
-cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
-
-## Little function just to make finding matches by hand easier
-## Since provinces are matched, it subsets the possible matches to province to make visual inspection easier
-def prov_matcher(name):
-    
-    cty_prov_csv['County'] = cty_prov_csv['County'].str.capitalize()
-    cty_prov_shp['county_en'] = cty_prov_shp['county_en'].str.capitalize()
-    
-    province = cty_prov_csv.loc[cty_prov_csv['County'] == name]['Province'].iloc[0]
-    
-    poss_matches = cty_prov_shp[cty_prov_shp['province_en'] == province]
-
-    return(poss_matches)
-
-prov_matcher('Zarghan')
-
-## Dore chagni: Doureh? Dorud?
-
-## Update county names here:
-
-'''
+# 'Behbahan' associated with 2 provinces in the human data?
+# 'Mashhad Morghab' doesn't go with Mashhhad because provinces don't match. Not sure where it goes
 
 #%%
 
 #######################################
 ## Cleaning animal data county names ##
 
-counties_ani = animal_data['county'].str.capitalize()
+ani_cnties = animal_data['county']
 
-ani_shp_match = likely_matches(counties_ani, counties2)
+matched_df = likely_matches(ani_cnties, iran_data['county_en'])
+#match_names(ani_cnties, counties2, as_df = False)
 
-ani_shp_match.loc[ani_shp_match['matched'] == 'NULL']
+ani_caps_mappings = map_caps(ani_cnties)
+
+automatched = matched_df[matched_df['matched'] != 'NULL']
+unmatched = matched_df[matched_df['matched'] == 'NULL']
+
+match_dict_ani = dict(zip(automatched.index.map(ani_caps_mappings), automatched['matched'].map(caps_mappings2)))
+
+#[ani_caps_mappings[key] for key in ani_matches[ani_matches['matched'] == 'NULL'].index]
+#[caps_mappings2[key] for key in ani_matches[ani_matches['matched'] == 'NULL']['name_dist']]
+
+match_dict_man_ani = {
+    'Aran and Bidgol':'Aran-o-Bidgol',
+    'Buin and Miandasht':'Booeino Miyandasht',
+    'Deyr':'Dayyer',
+    'Haftkel':'Haftgol',
+    'Ijrud':'Eejrud',
+    'Maneh asd Samalgan':'Maneh-o-Samalqan',
+    'Orzueeyeh':'Arzuiyeh',
+    'Qaleh ganj':'Ghaleye-Ganj',
+    'Qir and Karzin':'Qir-o-Karzin',
+    'Raz and Jargalan':'Razo Jalgelan',
+    'Sib and Suran':'Sibo Soran',
+    'Tiran and Karvan':'Tiran-o-Korun',
+    'Torqebeh and Shandiz(Binalud)':'Torghabe-o-Shandiz',
+    'Zaveh':'Zave'
+              }
+
+match_dict_ani.update(match_dict_man_ani)
+
+perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
+match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
+
+animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
+
+ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
 
 
 #%%
