@@ -272,7 +272,7 @@ provs1 = animal_data['province']
 provs2 = iran_data['province_en']
 
 #likely_matches(provs1, provs2, caps = False)
-test = match_names(provs1, provs2, as_df = True, caps = False, unique = True)
+#match_names(provs1, provs2, as_df = True, caps = False, unique = True)
 
 ## Province matchings - this accounts for all discrepancies
 match_dict_prov = {
@@ -313,9 +313,6 @@ unmatched = matched_df[matched_df['matched'] == 'NULL']
 
 match_dict_ani = dict(zip(automatched.index.map(ani_caps_mappings), automatched['matched'].map(caps_mappings2)))
 
-#[ani_caps_mappings[key] for key in ani_matches[ani_matches['matched'] == 'NULL'].index]
-#caps_unmatched = [caps_mappings2[key] for key in matched_df[matched_df['matched'] == 'NULL']]
-
 match_dict_man_ani = {
     'Aran and Bidgol':'Aran-o-Bidgol',
     'Buin and Miandasht':'Booeino Miyandasht',
@@ -330,37 +327,20 @@ match_dict_man_ani = {
     'Sib and Suran':'Sibo Soran',
     'Tiran and Karvan':'Tiran-o-Korun',
     'Torqebeh and Shandiz(Binalud)':'Torghabe-o-Shandiz',
-    'Zaveh':'Zave'
+    'Zaveh':'Zave',
+    'Chardavol':'Shirvan-o-Chardavol',
+    'Torkaman':'Bandar-e-Torkaman',
+    'mahshahr':'Mahshahr'
               }
 
 match_dict_ani.update(match_dict_man_ani)
 
 unmatched2 = [name for name in unmatched.index.map(ani_caps_mappings) if not name in match_dict_ani.keys()]
 
-## Possible matches:
-## Chardavol: Shirvan-o-Chardavol
-## Torkaman : Bandar-e-Torkaman
+## Reamining to be matched:
 ## Kohgiluyeh and BoyerAhmad: Kohgeluyeh??
-
-'''
-cty_prov_csv = animal_data[['county', 'province']].drop_duplicates('county')
-cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
-
-## need to update this to include matched provinces
-def prov_matcher(name):
-    
-    province = cty_prov_csv.loc[cty_prov_csv['county'] == name]['province'].iloc[0]
-    
-    poss_matches = cty_prov_shp[cty_prov_shp['province_en'] == province]
-
-    return(poss_matches)
-
-prov_matcher('Torkaman')
-'''
-
-
-
-
+## BoyerAhmad also to Kohgeluyeh then?
+## Jafarieh and kahak are in Qom province which only has one entry so we could join on this?
 
 perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
 match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
@@ -368,25 +348,6 @@ match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
 animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
 
 ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
-
-#[name for name in caps_unmatched if not (name in match_dict_man_ani.values())]
-
-
-#%%
-
-## Next:
-
-## Match animal names and join onto spatial master dataset (could also just join on spatial data - may not need everything to be in one)
-## Merge SES data at province level on master dataset
-
-## Deal with manual matches
-## Cross reference final 'matched' column with all the names in the original csv/shp files to see if there are as-yet unmmatched potential names
-## Double check some earlier matches - they may not all be correct
-
-test = likely_matches(animal_data['county'], iran_data['county_en']) ## This seems to match way better - maybe function should match both ways to identify good matchs?
-
-test.loc[test['matched'] == 'NULL']
-
 
 
 #%%
