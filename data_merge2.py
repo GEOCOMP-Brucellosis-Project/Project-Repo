@@ -226,13 +226,7 @@ matched_df.loc[(matched_df['matched'] == 'NULL')]
 unmatched_names = matched_df[matched_df['matched'] == 'NULL'].index
 unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
 
-## Manual matching to go here:
-
-
-
-
-
-
+## Manual matching to go here
 
 ## But first, should include province info in the matching function since counties with same province are obviously more likely to match
 cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
@@ -254,6 +248,10 @@ prov_matcher('Zarghan')
 
 ## Dore chagni: Doureh? Dorud?
 
+
+#%%
+
+## JOINING ##
 
 ## Prepare matched names for joining on human data
 matched_pairs = matched_df['matched'].reset_index()
