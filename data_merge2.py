@@ -256,12 +256,21 @@ human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County
 
 #%%
 
+
+## Beyond this is all notes and scribbles - All code above this should be good though
+
 ## QUALITY ASSURANCE ##
 
 ## Notes:
 
 ## I think zaboli should NOT be mapped to Zabol - fix manually?
-## Should heck to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
+## Should check to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
+
+## Need to figure out what to do with last unmatched names and also crowdsource an effort to find errors
+## in what has already been matched
+
+
+
 
 ## Remaining names - could useful for QA
 #rev_dict = {v: k for k, v in match_dict_cty.items()}
