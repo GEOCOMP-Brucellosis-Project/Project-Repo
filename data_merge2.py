@@ -265,6 +265,39 @@ human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County
 
 #%%
 
+#########################################
+## Cleaning animal data province names ##
+
+provs1 = animal_data['province']
+provs2 = iran_data['province_en']
+
+#likely_matches(provs1, provs2, caps = False)
+test = match_names(provs1, provs2, as_df = True, caps = False, unique = True)
+
+## Province matchings - this accounts for all discrepancies
+match_dict_prov = {
+    'West Azerbaijan':'West Azarbayjan',
+    'East Azerbaijan':'East Azarbayjan',
+    'Chaharmahal and Bakhtiari':'Chaharmahal & bakhtiari',
+    'Isfahan':'Esfahan',
+    'South Khorasan':'Khorasan Jonobi',
+    'North Khorasan':'Khorasan Shomali',
+    'Razavi Khorasan':'Khorasan Razavi',
+    'Sistan and Baluchestan':'Sistan & Bluchestan',
+    'Hamadan':'Hamedan',
+    'Kermanshan':'Kermanshah',
+    'Kohgiluyeh and Boyer-Ahmad':'Kohgiluyeh and BoyerAhmad',
+    'Kurdistan':'Kordestan',
+    'Kerman':'South Kerman'
+              }
+
+## Invert dictionary
+match_dict_prov = {v: k for k, v in match_dict_prov.items()}
+
+## Update province names in human data with dictionary mappings
+animal_data['province'] = animal_data['province'].map(match_dict_prov).fillna(animal_data['province'])
+
+
 #######################################
 ## Cleaning animal data county names ##
 
@@ -281,7 +314,7 @@ unmatched = matched_df[matched_df['matched'] == 'NULL']
 match_dict_ani = dict(zip(automatched.index.map(ani_caps_mappings), automatched['matched'].map(caps_mappings2)))
 
 #[ani_caps_mappings[key] for key in ani_matches[ani_matches['matched'] == 'NULL'].index]
-#[caps_mappings2[key] for key in ani_matches[ani_matches['matched'] == 'NULL']['name_dist']]
+#caps_unmatched = [caps_mappings2[key] for key in matched_df[matched_df['matched'] == 'NULL']]
 
 match_dict_man_ani = {
     'Aran and Bidgol':'Aran-o-Bidgol',
@@ -291,7 +324,7 @@ match_dict_man_ani = {
     'Ijrud':'Eejrud',
     'Maneh asd Samalgan':'Maneh-o-Samalqan',
     'Orzueeyeh':'Arzuiyeh',
-    'Qaleh ganj':'Ghaleye-Ganj',
+    'Qaleh Ganj':'Ghaleye-Ganj',
     'Qir and Karzin':'Qir-o-Karzin',
     'Raz and Jargalan':'Razo Jalgelan',
     'Sib and Suran':'Sibo Soran',
@@ -302,12 +335,41 @@ match_dict_man_ani = {
 
 match_dict_ani.update(match_dict_man_ani)
 
+unmatched2 = [name for name in unmatched.index.map(ani_caps_mappings) if not name in match_dict_ani.keys()]
+
+## Possible matches:
+## Chardavol: Shirvan-o-Chardavol
+## Torkaman : Bandar-e-Torkaman
+## Kohgiluyeh and BoyerAhmad: Kohgeluyeh??
+
+'''
+cty_prov_csv = animal_data[['county', 'province']].drop_duplicates('county')
+cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
+
+## need to update this to include matched provinces
+def prov_matcher(name):
+    
+    province = cty_prov_csv.loc[cty_prov_csv['county'] == name]['province'].iloc[0]
+    
+    poss_matches = cty_prov_shp[cty_prov_shp['province_en'] == province]
+
+    return(poss_matches)
+
+prov_matcher('Torkaman')
+'''
+
+
+
+
+
 perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
 match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
 
 animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
 
 ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
+
+#[name for name in caps_unmatched if not (name in match_dict_man_ani.values())]
 
 
 #%%
