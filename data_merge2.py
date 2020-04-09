@@ -154,8 +154,8 @@ def map_caps(s1):
         
 #%%
 
-###############################
-## Cleaning our data's names ##
+#########################
+## Human Data Cleaning ##
 
 ## Province Matching
     
@@ -184,9 +184,6 @@ match_dict_prov = {v: k for k, v in match_dict_prov.items()}
 
 ## Update province names in human data with dictionary mappings
 human_data['Province'] = human_data['Province'].map(match_dict_prov).fillna(human_data['Province'])
-
-
-#%%
 
 ## County Matching
 
@@ -256,8 +253,6 @@ human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_dat
 ## Joining ##
 human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
 
-#%%
-
 ## QUALITY ASSURANCE NOTES ##
 
 # 'Behbahan' associated with 2 provinces in the human data?
@@ -265,11 +260,11 @@ human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County
 
 #%%
 
-#########################################
-## Cleaning animal data province names ##
+##########################
+## Animal Data Cleaning ##
 
-provs1 = animal_data['province']
-provs2 = iran_data['province_en']
+#provs1 = animal_data['province']
+#provs2 = iran_data['province_en']
 
 #likely_matches(provs1, provs2, caps = False)
 #match_names(provs1, provs2, as_df = True, caps = False, unique = True)
@@ -303,16 +298,18 @@ animal_data['province'] = animal_data['province'].map(match_dict_prov).fillna(an
 
 ani_cnties = animal_data['county']
 
-matched_df = likely_matches(ani_cnties, iran_data['county_en'])
+#matched_df = likely_matches(ani_cnties, iran_data['county_en'])
 #match_names(ani_cnties, counties2, as_df = False)
 
 ani_caps_mappings = map_caps(ani_cnties)
 
-automatched = matched_df[matched_df['matched'] != 'NULL']
-unmatched = matched_df[matched_df['matched'] == 'NULL']
+#automatched = matched_df[matched_df['matched'] != 'NULL']
+#unmatched = matched_df[matched_df['matched'] == 'NULL']
 
+## Start mapping dictionary with the automatched names
 match_dict_ani = dict(zip(automatched.index.map(ani_caps_mappings), automatched['matched'].map(caps_mappings2)))
 
+## Manually updated name mappings
 match_dict_man_ani = {
     'Aran and Bidgol':'Aran-o-Bidgol',
     'Buin and Miandasht':'Booeino Miyandasht',
@@ -335,18 +332,19 @@ match_dict_man_ani = {
 
 match_dict_ani.update(match_dict_man_ani)
 
-unmatched2 = [name for name in unmatched.index.map(ani_caps_mappings) if not name in match_dict_ani.keys()]
+#unmatched2 = [name for name in unmatched.index.map(ani_caps_mappings) if not name in match_dict_ani.keys()]
 
 ## Reamining to be matched:
 ## Kohgiluyeh and BoyerAhmad: Kohgeluyeh??
 ## BoyerAhmad also to Kohgeluyeh then?
 ## Jafarieh and kahak are in Qom province which only has one entry so we could join on this?
 
+## Add identical matches to the dictionary
 perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
 match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
 
+## Update county names in animal data and do the join
 animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
-
 ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
 
 
