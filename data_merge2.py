@@ -78,8 +78,6 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
         
         s1 = s1.str.capitalize()
         s2 = s2.str.capitalize()
-        
-        
     
     ## Unique values in each series
     vals1 = s1.unique()
@@ -140,6 +138,20 @@ def likely_matches(s1, s2, cutoff = 0.75, as_df = True, caps = True, unique = Tr
            
     return(matched)
     
+## Little helper function that creates a dictionary mapping capitalized values
+## to original values (so we can go back and forth more easily)
+def map_caps(s1):
+    
+    s1 = pd.Series(s1)
+    
+    ## Capitalize series values
+    s1_caps = s1.str.capitalize().unique()
+    
+    ## Map original values to capitalized values
+    caps_mappings = {name1:name2 for name1, name2 in zip(s1_caps, s1.unique())}
+    
+    return(caps_mappings)
+        
 #%%
 
 ###############################
@@ -189,15 +201,19 @@ matched_df = likely_matches(counties1, counties2)
 matched_df[matched_df['matched'] == 'NULL']
 automatched = matched_df[matched_df['matched'] != 'NULL']
 
-match_dict_cty = dict(zip(automatched.index, automatched['matched']))
+## Revert automatched names back to original form data files and zip matched pairs into dictionary
+caps_mappings1 = map_caps(counties1)
+caps_mappings2 = map_caps(counties2)
+
+match_dict_cty = dict(zip(automatched.index.map(caps_mappings1), automatched['matched'].map(caps_mappings2)))
 
 ## Manual matching
 match_dict_man = {
     'Ali Abad Katul':'Aliabad', 
     'Bafgh':'Bafq', 
-    'Bandar Qaz':'Bandar-e-gaz', 
+    'Bandar Qaz':'Bandar-e-Gaz', 
     'Dailam':'Deylam',
-    'Gonbad  kavoos':'Gonbad-e-kavus', 
+    'Gonbad  kavoos':'Gonbad-e-Kavus', 
     'Ijroud':'Eejrud', 
     'Jovein':'Jowayin',
     'Kalale':'Kolaleh',
@@ -208,12 +224,12 @@ match_dict_man = {
     'Ray':'Rey', 
     'Tehran Jonub':'Tehran', 
     'Tehran Shomal':'Tehran', 
-    'Tiran o Karvan':'Tiran-o-korun',
+    'Tiran o Karvan':'Tiran-o-Korun',
     'Abadeh Tashk':'Abadeh',
     'Agh Ghala':'Aqqala',
     'Ahvaz e gharb':'Ahvaz',
     'Ahvaz e Shargh':'Ahvaz',
-    'Gilan Qarb':'Gilan-e-gharb',
+    'Gilan Qarb':'Gilan-e-Gharb',
     'Kharame':'Kherameh',
     'Maraqe':'Maragheh',
     'Mashhad Morghab':'Mashhad',
@@ -222,34 +238,43 @@ match_dict_man = {
     'Tehran Shomal Qarb':'Tehran',
     'Zaveh':'Zave',
     'Bandar Mahshahr':'Mashahr',
-    'Qale ganj':'Ghaleye-ganj'
+    'Qale ganj':'Ghaleye-Ganj'
               }
 
-match_dict_cty.update(match_dict_man)
+match_dict_cty.update(match_dict_man) ## This now has all automatched names and manually matched names
 
-
-
+## Add all the perfect matches to this dictionary
+## Mapping dictionary now should include all matches
+perf_matches = np.intersect1d(iran_data['county_en'], human_data['County'])
+match_dict_cty.update(dict(zip(perf_matches, perf_matches)))
 
 ## Map names in dataframe based on dictionary
-human_data['County'] = human_data['County'].map(match_dict).fillna(human_data['County'])
+human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_data['County'])
 
 
-## Need to update human_data['County'] with the auto-matched names too before joining
-## would be nice to have one big dictinoary of all the mappings for QA afterwords
 
+## QUALITY ASSURANCE NOTES
 
+## I think zaboli should NOT be mapped to Zabol - fix manually?
+
+#%%
+
+rev_dict = {v: k for k, v in match_dict_cty.items()}
 
 
 test = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
 
 test = test[['County','Province','county_en','province_en']]
 
-
 ## QA -  check to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
 
 
 
 
+
+
+
+#%%
 
 ## But first, should include province info in the matching function since counties with same province are obviously more likely to match
 cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
