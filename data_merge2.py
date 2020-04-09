@@ -78,6 +78,8 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
         
         s1 = s1.str.capitalize()
         s2 = s2.str.capitalize()
+        
+        
     
     ## Unique values in each series
     vals1 = s1.unique()
@@ -125,7 +127,7 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
 ## Function to return highly probable string matches - the rest will have to be done manually
 ## Depends on match_names function
 ## The index of the resulting df contains values from the *first* series passed to the function
-def likely_matches(s1, s2, as_df = True, caps = True, unique = True):
+def likely_matches(s1, s2, cutoff = 0.75, as_df = True, caps = True, unique = True):
     
     ## Create dataframe recording potential name matches
     matched = match_names(s1, s2, as_df = as_df, caps = caps, unique = unique)
@@ -134,7 +136,7 @@ def likely_matches(s1, s2, as_df = True, caps = True, unique = True):
     matched['name_match'] = (matched['name_dist'] == matched['name_ratio'])
     
     ## Can be highly confident when nameMatch = True, ratio >= .75 - this matches 145 of the 192 that need matches
-    matched['matched'] = np.where((matched['name_match'] == True) & (matched['ratio'] >= .75), matched['name_dist'], 'NULL')
+    matched['matched'] = np.where((matched['name_match'] == True) & (matched['ratio'] >= cutoff), matched['name_dist'], 'NULL')
            
     return(matched)
     
@@ -182,57 +184,79 @@ counties2 = iran_data['county_en']
 
 ## Create mapping of likely pairs
 matched_df = likely_matches(counties1, counties2)
-matched_dict = match_names(counties1, counties2, as_df = False)
+#match_names(counties1, counties2, as_df = False)
 
 matched_df[matched_df['matched'] == 'NULL']
+automatched = matched_df[matched_df['matched'] != 'NULL']
 
-## These names weren't auto-matched but their proposed matches seem right
-## So we match them manually
-names = [
-    'Ali abad katul', 'Bafgh', 'Bandar qaz', 'Bile savar', 
-    'Dailam', 'Eslam abad gharb', 'Gonbad  kavoos', 
-    'Ijroud', 'Jovein', 'Mahvalat', 'Menojan', 
-    'Neyshabur',  'Orzoieyeh', 'Ray', 'Tehran jonub', 
-    'Tehran shomal', 'Tiran o karvan'
-    ]
+match_dict_cty = dict(zip(automatched.index, automatched['matched']))
 
-matched_df.loc[matched_df.index.isin(names), 'matched'] = matched_df['name_dist']
-
-## These names were not quite as obvious but seem to have the following matches
-match_dict = {
-    'Abadeh tashk':'Abadeh',
-    'Agh ghala':'Aqqala',
+## Manual matching
+match_dict_man = {
+    'Ali Abad Katul':'Aliabad', 
+    'Bafgh':'Bafq', 
+    'Bandar Qaz':'Bandar-e-gaz', 
+    'Dailam':'Deylam',
+    'Gonbad  kavoos':'Gonbad-e-kavus', 
+    'Ijroud':'Eejrud', 
+    'Jovein':'Jowayin',
+    'Kalale':'Kolaleh',
+    'Mahvalat':'Mahvelat', 
+    'Menojan':'Manujan', ## auto-matched incorrectly
+    'Neyshabur':'Nishapur',  
+    'Orzoieyeh':'Arzuiyeh', 
+    'Ray':'Rey', 
+    'Tehran Jonub':'Tehran', 
+    'Tehran Shomal':'Tehran', 
+    'Tiran o Karvan':'Tiran-o-korun',
+    'Abadeh Tashk':'Abadeh',
+    'Agh Ghala':'Aqqala',
     'Ahvaz e gharb':'Ahvaz',
-    'Ahvaz e shargh':'Ahvaz',
-    'Gilan qarb':'Gilan-e-gharb',
+    'Ahvaz e Shargh':'Ahvaz',
+    'Gilan Qarb':'Gilan-e-gharb',
     'Kharame':'Kherameh',
     'Maraqe':'Maragheh',
-    'Mashhad morghab':'Mashhad',
-    'Tehran gharb':'Tehran',
-    'Tehran shargh':'Tehran',
-    'Tehran shomal qarb':'Tehran',
+    'Mashhad Morghab':'Mashhad',
+    'Tehran Gharb':'Tehran',
+    'Tehran Shargh':'Tehran',
+    'Tehran Shomal Qarb':'Tehran',
     'Zaveh':'Zave',
-    'Bandar mahshahr':'Mashahr',
-    'Kalale':'Kolaleh',
+    'Bandar Mahshahr':'Mashahr',
     'Qale ganj':'Ghaleye-ganj'
               }
 
-matched_df.loc[matched_df.index.isin(list(match_dict.keys())), 'matched'] = list(match_dict.values())
+match_dict_cty.update(match_dict_man)
 
-## So, we're left with these 16 names...
-matched_df.loc[(matched_df['matched'] == 'NULL')]
 
-## Records for still unmatched names - helpful for manual matching
-unmatched_names = matched_df[matched_df['matched'] == 'NULL'].index
-unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
 
-## Manual matching to go here
+
+## Map names in dataframe based on dictionary
+human_data['County'] = human_data['County'].map(match_dict).fillna(human_data['County'])
+
+
+## Need to update human_data['County'] with the auto-matched names too before joining
+## would be nice to have one big dictinoary of all the mappings for QA afterwords
+
+
+
+
+test = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
+
+test = test[['County','Province','county_en','province_en']]
+
+
+## QA -  check to see if any counties have multiple provinces after join - that would suggest different provinces in shp vs csv
+
+
+
+
 
 ## But first, should include province info in the matching function since counties with same province are obviously more likely to match
 cty_prov_csv = human_data[['County', 'Province']].drop_duplicates('County')
 cty_prov_shp = iran_data[['county_en', 'province_en']].drop_duplicates('county_en')
 
-## need to update this to include matched provinces
+## Little function just to make finding matches by hand easier
+## Since provinces are matched, it subsets the possible matches to province to make visual inspection easier
 def prov_matcher(name):
     
     cty_prov_csv['County'] = cty_prov_csv['County'].str.capitalize()
@@ -247,6 +271,30 @@ def prov_matcher(name):
 prov_matcher('Zarghan')
 
 ## Dore chagni: Doureh? Dorud?
+
+## Update county names here:
+
+
+
+
+
+
+
+
+
+
+
+## Don't use this ugly method - delete once matching is working
+#matched_df.loc[matched_df.index.isin(list(match_dict.keys())), 'matched'] = list(match_dict.values())
+
+## So, we're ultimately left with these names...
+matched_df.loc[(matched_df['matched'] == 'NULL')]
+
+## Records for still unmatched names - helpful for manual matching
+unmatched_names = matched_df[matched_df['matched'] == 'NULL'].index
+unmatched_dict = {name: matched_dict[name] for name in unmatched_names}
+
+
 
 
 #%%
@@ -278,18 +326,6 @@ iran_data2.loc[iran_data2['county_en'].isin(precise_matches) &
 human_sp_data = iran_data2.merge(human_data, how = 'outer', left_on = 'county_csv', right_on = 'County')
 
 
-
-
-## TO DO:
-
-## Manually match remaining 17 names
-#### Can check provinces as a guide, too. May want to incorporate this into the likely matches function 
-#### (i.e. two similar names with the same province are more likely to be matches - at the very least can include province
-#### in likely_matches output to aid the user in finding matches manually)
-
-## Deal with animal_data names.
-
-
 #%%
 
 #######################################
@@ -303,11 +339,6 @@ ani_shp_match.loc[ani_shp_match['matched'] == 'NULL']
 
 
 #%%
-
-
-
-
-
 
 ## Next:
 
