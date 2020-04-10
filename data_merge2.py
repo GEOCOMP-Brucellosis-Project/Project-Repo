@@ -253,6 +253,9 @@ human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_dat
 ## Joining ##
 human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
 
+## Write mapping dictionary to csv for ease of QA
+# pd.DataFrame.from_dict(data=match_dict_cty, orient='index').to_csv(fp + '/human_data_mappings.csv', index_label = ['human_county'], header=['shp_county'])
+
 ## QUALITY ASSURANCE NOTES ##
 
 # 'Behbahan' associated with 2 provinces in the human data?
@@ -298,12 +301,12 @@ animal_data['province'] = animal_data['province'].map(match_dict_prov).fillna(an
 
 ani_cnties = animal_data['county']
 
-#matched_df = likely_matches(ani_cnties, iran_data['county_en'])
+matched_df = likely_matches(ani_cnties, iran_data['county_en'])
 #match_names(ani_cnties, counties2, as_df = False)
 
 ani_caps_mappings = map_caps(ani_cnties)
 
-#automatched = matched_df[matched_df['matched'] != 'NULL']
+automatched = matched_df[matched_df['matched'] != 'NULL']
 #unmatched = matched_df[matched_df['matched'] == 'NULL']
 
 ## Start mapping dictionary with the automatched names
@@ -347,9 +350,11 @@ match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
 animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
 ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
 
+## Write mapping dictionary to csv for ease of QA
+# pd.DataFrame.from_dict(data=match_dict_ani, orient='index').to_csv(fp + '/animal_data_mappings.csv', index_label = ['animal_county'], header = ['shp_county'])
+
 
 #%%
 
 ## Also - some places that did merge have different provinces? Double check this once names are updated
 # human_sp_data[['County', 'county_en', 'Province', 'province_en']].loc[human_sp_data['county_en'].isnull()]
-
