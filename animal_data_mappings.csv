@@ -69,7 +69,6 @@ Salseleh,Selseleh
 Sanandaj,Sannandaj
 Sarein,Sareyn
 Sarpol-e Zahab,Sarpol-e-Zahab
-sarvastan,Sarvestan
 Save,Saveh
 Shaharbabak,Shahr-e-Babak
 Shahin Dezh,Shahindej
@@ -84,6 +83,8 @@ Torbat-e Jam,Torbat-e-Jam
 Urmia,Urumia
 Zarrin Dasht,Zarrindasht
 Zirkuh,Zirkouh
+mahshahr,Mahshahr
+sarvastan,Sarvestan
 Aran and Bidgol,Aran-o-Bidgol
 Buin and Miandasht,Booeino Miyandasht
 Deyr,Dayyer
@@ -100,7 +101,10 @@ Torqebeh and Shandiz(Binalud),Torghabe-o-Shandiz
 Zaveh,Zave
 Chardavol,Shirvan-o-Chardavol
 Torkaman,Bandar-e-Torkaman
-mahshahr,Mahshahr
+Jafarieh,Torbat-e-Jam
+Kahak,Sabzevar
+Kohgiluyeh and BoyerAhmad,Kohgeluyeh
+BoyerAhmad,Yasooj
 Abadan,Abadan
 Abadeh,Abadeh
 Abarkuh,Abarkuh
