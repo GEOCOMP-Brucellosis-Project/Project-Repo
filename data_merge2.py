@@ -50,6 +50,8 @@ iran_data = gpd.read_file(fp + '/Iran_shp/iran_admin.shp')
 iran_data = iran_data[['ADM2_EN','ADM2_FA','ADM1_EN','ADM1_FA','Shape_Leng','Shape_Area','geometry']]
 iran_data.columns = ['county_en', 'county_fa', 'province_en', 'province_fa', 'shape_len', 'shape_area', 'geometry']
 
+iran_data.loc[iran_data['county_en'] == 'Yasooj\r', 'county_en'] = 'Yasooj'
+
 ## Read in human data
 human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_V2.csv')).drop(['Unnamed: 18', 'Unnamed: 19'], axis = 1)
 
@@ -74,16 +76,11 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
     s1 = pd.Series(s1)
     s2 = pd.Series(s2)
     
-    if caps == True:
-        
-        s1 = s1.str.capitalize()
-        s2 = s2.str.capitalize()
-    
     ## Unique values in each series
     vals1 = s1.unique()
     vals2 = s2.unique()
     
-    ## If unique argument is set to true, only match names that don't have already perfect match
+    ## If unique argument is set to true, only match names that don't already have perfect match
     if unique == True:
         
         ## Unique values in series 1 that aren't in series 2
@@ -91,7 +88,13 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
     
         ## Unique values in series 2 that aren't in series 1
         vals2 = pd.Series(np.setdiff1d(vals2, vals1))
-    
+        
+    if caps == True:
+        
+        ## Capitalize before matching
+        vals1 = vals1.str.capitalize()
+        vals2 = vals2.str.capitalize()
+        
     ## Calculate Levenshtein distance and ratio
     dists = np.array([leven.distance(name1, name2) for name1 in vals1 for name2 in vals2])
     ratios = np.array([leven.ratio(name1, name2) for name1 in vals1 for name2 in vals2])
@@ -113,7 +116,7 @@ def match_names(s1, s2, as_df = True, caps = True, unique = True):
     ## If user wants more detail, we can create a dictionary for each name that contains more graunlar info
     ## This section creates a dictionary with names as keys and dataframes as values
     ## Each dataframe contains all the possible name pairings (as opposed to above, which only supplies best possible values)
-    if as_df == False:
+    else:
         
         ratios_dict = {name1: ratios_df.loc[name1].sort_values(ascending = False) for name1 in vals1}
         dists_dict = {name1: dists_df.loc[name1].sort_values() for name1 in vals1}
@@ -163,7 +166,7 @@ provs1 = human_data.loc[human_data['Province'] != 'Null']['Province']
 provs2 = iran_data['province_en']
 
 likely_matches(provs1, provs2, caps = False)
-match_names(provs1, provs2, as_df = False, caps = False, unique = True)
+test = match_names(provs1, provs2, as_df = False, caps = False, unique = True)
 
 ## Province matchings - this accounts for all discrepancies
 match_dict_prov = {
@@ -192,10 +195,10 @@ counties1 = human_data.loc[human_data['County'] != 'Null']['County']
 counties2 = iran_data['county_en']
 
 ## Create mapping of likely pairs
-matched_df = likely_matches(counties1, counties2, 0.751)
+matched_df = likely_matches(counties1, counties2)
 #match_names(counties1, counties2, as_df = False)
 
-matched_df[matched_df['matched'] == 'NULL']
+#matched_df[matched_df['matched'] == 'NULL']
 automatched = matched_df[matched_df['matched'] != 'NULL']
 
 ## Revert automatched names back to original form data files and zip matched pairs into dictionary
@@ -234,18 +237,32 @@ match_dict_man = {
     'Tehran Shomal Qarb':'Tehran',
     'Zaveh':'Zave',
     'Bandar Mahshahr':'Mahshahr',
-    'Qale ganj':'Ghaleye-Ganj'
+    'Qale ganj':'Ghaleye-Ganj',
+    'Sarchahan':'Hajiabad',
+    'Kamfirouz':'Marvdasht',
+    'Zarghan': 'Shiraz',
+    'Beyza':'Sepidan',
+    'Dore Chagni':'Doureh',
+    'Sepid Dasht':'Khorramabad',
+    'Nour Abad':'Mamasani',
+    'Aleshtar':'Selseleh',
+    'Boyerahmad':'Yasooj',
+    'Saduq':'Yazd',
+    'Mashhad Morghab':'Khorrambid',
+    'Dehdez':'Izeh',
+    'zaboli':'Mehrestan',
+    'Qaemiyeh':'Kazerun',
+    'Samen ol Aemmeh':'Mashhad',
+    'kish':'Bandar-Lengeh'
               }
 
 match_dict_cty.update(match_dict_man) ## This now has all automatched names and manually matched names
 
 ## Add all the perfect matches to this dictionary
 ## Mapping dictionary now should include all matches
-perf_matches = np.intersect1d(iran_data['county_en'], human_data['County'])
-match_dict_cty.update(dict(zip(perf_matches, perf_matches)))
+perf_matches = np.intersect1d(iran_data['county_en'].str.capitalize(), human_data['County'].str.capitalize())
 
-## Remove incorrect match for zaboli
-del match_dict_cty['zaboli']
+match_dict_cty.update(dict(zip(perf_matches, perf_matches)))
 
 ## Map names in dataframe based on dictionary
 human_data['County'] = human_data['County'].map(match_dict_cty).fillna(human_data['County'])
@@ -330,7 +347,11 @@ match_dict_man_ani = {
     'Zaveh':'Zave',
     'Chardavol':'Shirvan-o-Chardavol',
     'Torkaman':'Bandar-e-Torkaman',
-    'mahshahr':'Mahshahr'
+    'mahshahr':'Mahshahr',
+    'Jafarieh':'Torbat-e-Jam',
+    'Kahak':'Sabzevar',
+    'Kohgiluyeh and BoyerAhmad':'Kohgeluyeh',
+    'BoyerAhmad':'Yasooj'
               }
 
 match_dict_ani.update(match_dict_man_ani)
@@ -341,6 +362,7 @@ match_dict_ani.update(match_dict_man_ani)
 ## Kohgiluyeh and BoyerAhmad: Kohgeluyeh??
 ## BoyerAhmad also to Kohgeluyeh then?
 ## Jafarieh and kahak are in Qom province which only has one entry so we could join on this?
+
 
 ## Add identical matches to the dictionary
 perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
