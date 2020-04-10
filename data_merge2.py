@@ -50,6 +50,7 @@ iran_data = gpd.read_file(fp + '/Iran_shp/iran_admin.shp')
 iran_data = iran_data[['ADM2_EN','ADM2_FA','ADM1_EN','ADM1_FA','Shape_Leng','Shape_Area','geometry']]
 iran_data.columns = ['county_en', 'county_fa', 'province_en', 'province_fa', 'shape_len', 'shape_area', 'geometry']
 
+## This accidental escape sequence is problematic later, so deal with manually here
 iran_data.loc[iran_data['county_en'] == 'Yasooj\r', 'county_en'] = 'Yasooj'
 
 ## Read in human data
@@ -357,12 +358,6 @@ match_dict_man_ani = {
 match_dict_ani.update(match_dict_man_ani)
 
 #unmatched2 = [name for name in unmatched.index.map(ani_caps_mappings) if not name in match_dict_ani.keys()]
-
-## Reamining to be matched:
-## Kohgiluyeh and BoyerAhmad: Kohgeluyeh??
-## BoyerAhmad also to Kohgeluyeh then?
-## Jafarieh and kahak are in Qom province which only has one entry so we could join on this?
-
 
 ## Add identical matches to the dictionary
 perf_matches = np.intersect1d(iran_data['county_en'], animal_data['county'])
