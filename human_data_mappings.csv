@@ -1,4 +1,5 @@
 human_county,shp_county
+Abar Kooh,Abarkuh
 Abas Abad,Abbasabad
 Ajab Shir,Ajabshir
 Aligoodarz,Aligudarz
@@ -33,13 +34,14 @@ Dare Shahr,Darreh Shahr
 Dasht Azadegan,Dasht-e-Azadegan
 Delgan,Dalgan
 Divandare,Divandarreh
+Esfahan 1,Isfahan
+Esfahan 2,Isfahan
 Eslam Abad Gharb,Islamabad-e-Gharb
 Eslamshahr,Islamshahr
 Fannuj,Fanouj
 Faruj,Faroj
 Ferdos,Ferdows
 Fereidun shahr,Fereydunshahr
-fereydon kenar,Feredunkenar
 Firouzeh,Firuzeh
 Firozabad,Firuzabad
 Firozkuh,Firuzkuh
@@ -57,11 +59,11 @@ Hamoon,Hamoun
 Hovaizeh,Hoveizeh
 Jajarm,Jajrom
 Javanroud,Javanrud
+Joghtaye,Joghatai
 Kabudar Ahang,Kabudarahang
 Kaleybar,Kalibar
 Karaj 1,Karaj
 Karaj 2,Karaj
-karoon,Karoun
 Khalil Abad,Khalilabad
 Khandab,Khondab
 Khoda Afarin,Khodaafarin
@@ -71,7 +73,6 @@ Khorambid,Khorrambid
 Khoramdareh,Khorramdarreh
 Khoramshahr,Khorramshahr
 Khosf,Khusf
-kiyar,Kiaar
 Kohgiluyeh,Kohgeluyeh
 Komeyjan,Komeijan
 Kord kuy,Kordkuy
@@ -83,7 +84,6 @@ Mahmud Abad,Mahmudabad
 Majed soleyman,Masjed-Soleyman
 Malkan,Malekan
 Mane-o-Samalqan,Maneh-o-Samalqan
-maraveh tapeh,Maravehtapeh
 Mashhad 1,Mashhad
 Mashhad 2,Mashhad
 Mashhad 3,Mashhad
@@ -121,6 +121,7 @@ Sahne,Sahneh
 Salas e babajani,Solas-e-Babajani
 Sanandaj,Sannandaj
 Sarbishe,Sarbisheh
+Sarchahan,Hajiabad
 Sarein,Sareyn
 Sarpol  Zahab,Sarpol-e-Zahab
 Sarv Abad,Sarvabad
@@ -130,13 +131,10 @@ Shahinshahr o Meime,Shahinshahro Meymeh
 Shahr Babak,Shahr-e-Babak
 Shahr Qods,Shahr-e Qods
 Shahriyar,Shahriar
-shimiranat,Shemiranat
 Shiraz 1,Shiraz
 Shiraz 2,Shiraz
 Shiraz 3,Shiraz
 Shirvan Chardavol,Shirvan-o-Chardavol
-shot,Showt
-sib o suran,Sibo Soran
 Simorq,Simorgh
 Siyahkal,Siahkal
 Soltaniyeh,Soltanieh
@@ -153,6 +151,16 @@ Zahak,Zehak
 Zarandiye,Zarandieh
 Zarin Dasht,Zarrindasht
 Zirkooh,Zirkouh
+fereydon kenar,Feredunkenar
+kahnuj,Kahnuj
+karoon,Karoun
+kiyar,Kiaar
+maraveh tapeh,Maravehtapeh
+shimiranat,Shemiranat
+shot,Showt
+sib o suran,Sibo Soran
+sirik,Sirik
+zaboli,Mehrestan
 Ali Abad Katul,Aliabad
 Bafgh,Bafq
 Bandar Qaz,Bandar-e-Gaz
@@ -181,6 +189,20 @@ Tehran Shomal Qarb,Tehran
 Zaveh,Zave
 Bandar Mahshahr,Mahshahr
 Qale ganj,Ghaleye-Ganj
+Kamfirouz,Marvdasht
+Zarghan,Shiraz
+Beyza,Sepidan
+Dore Chagni,Doureh
+Sepid Dasht,Khorramabad
+Nour Abad,Mamasani
+Aleshtar,Selseleh
+Boyerahmad,Yasooj
+Saduq,Yazd
+Mashhad Morghab,Khorrambid
+Dehdez,Izeh
+Qaemiyeh,Kazerun
+Samen ol Aemmeh,Mashhad
+kish,Bandar-Lengeh
 Abadan,Abadan
 Abadeh,Abadeh
 Abdanan,Abdanan
@@ -287,6 +309,7 @@ Jask,Jask
 Jiroft,Jiroft
 Jolfa,Jolfa
 Juybar,Juybar
+Kahnuj,Kahnuj
 Kalat,Kalat
 Kamyaran,Kamyaran
 Kangavar,Kangavar
@@ -398,6 +421,7 @@ Shazand,Shazand
 Shirvan,Shirvan
 Shush,Shush
 Shushtar,Shushtar
+Sirik,Sirik
 Sirjan,Sirjan
 Sirvan,Sirvan
 Sonqor,Sonqor
