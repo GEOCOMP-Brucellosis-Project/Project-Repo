@@ -370,7 +370,15 @@ ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county'
 ## Write mapping dictionary to csv for ease of QA
 # pd.DataFrame.from_dict(data=match_dict_ani, orient='index').to_csv(fp + '/animal_data_mappings.csv', index_label = ['animal_county'], header = ['shp_county'])
 
+#%%
+'''
+## Write files
+human_sp_data = gpd.GeoDataFrame(human_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+human_sp_data.to_file(os.path.join(fp, 'human_data_clean.shp'))
 
+ani_sp_data = gpd.GeoDataFrame(ani_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+ani_sp_data.to_file(os.path.join(fp, 'animal_shp', 'animal_data_clean.shp'))
+'''
 #%%
 
 ## Also - some places that did merge have different provinces? Double check this once names are updated
