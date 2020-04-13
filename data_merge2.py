@@ -60,10 +60,6 @@ human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_
 human_data.loc[human_data['Province'] == 'Khorasan jonobi', 'Province'] = 'Khorasan Jonobi'
 human_data.loc[human_data['Province'] == 'Khorasan shomali', 'Province'] = 'Khorasan Shomali'
 
-## Left join human data to spatial data
-## Gives us a fair amount of missing matches...
-# human_sp_data = human_data.merge(iran_data, how = 'outer', left_on = 'County', right_on = 'county_en')
-
 #%%
 
 ##########################################
@@ -277,7 +273,6 @@ human_sp_data = pd.merge(human_data, iran_data, how = 'outer', left_on = 'County
 ## QUALITY ASSURANCE NOTES ##
 
 # 'Behbahan' associated with 2 provinces in the human data?
-# 'Mashhad Morghab' doesn't go with Mashhhad because provinces don't match. Not sure where it goes
 
 #%%
 
@@ -371,15 +366,45 @@ ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county'
 # pd.DataFrame.from_dict(data=match_dict_ani, orient='index').to_csv(fp + '/animal_data_mappings.csv', index_label = ['animal_county'], header = ['shp_county'])
 
 #%%
+
+#######################
+## SES Data Cleaning ##
+
+## Read in SES data and rename columns
+ses_data = pd.read_csv(os.path.join(fp, 'Data', 'ses_data.csv'))
+ses_data.columns = ['province', 'pop', 'hshld_size', 'ses']
+
+## Get province names
+ses_provs = ses_data['province'].unique()
+
+## Automatch ses names to spatial data province names
+ses_matches = likely_matches(ses_provs, iran_data['province_en'].unique())
+
+## Maps from matched names back to uncapitalized names
+ses_caps_map = map_caps(ses_provs)
+iran_prov_map = map_caps(iran_data['province_en'].unique())
+
+## Determine names that were successfully matched
+automatched = ses_matches[ses_matches['matched'] != 'NULL']
+
+## Create dictionary mapping ses names to spatial data names and update ses_data
+match_dict_ses = dict(zip(automatched.index.map(ses_caps_map), automatched['matched'].map(iran_prov_map)))
+ses_data['province'] = ses_data['province'].map(match_dict_ses).fillna(ses_data['province'])
+
+## Join data
+ses_sp_data = pd.merge(ses_data, iran_data, how = 'outer', left_on = 'province', right_on = 'province_en')
+
+#%%
+
 '''
 ## Write files
 human_sp_data = gpd.GeoDataFrame(human_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
-human_sp_data.to_file(os.path.join(fp, 'human_data_clean.shp'))
+human_sp_data.to_file(os.path.join(fp, 'human_shp', 'human_data_clean.shp'))
 
 ani_sp_data = gpd.GeoDataFrame(ani_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
 ani_sp_data.to_file(os.path.join(fp, 'animal_shp', 'animal_data_clean.shp'))
-'''
-#%%
 
-## Also - some places that did merge have different provinces? Double check this once names are updated
-# human_sp_data[['County', 'county_en', 'Province', 'province_en']].loc[human_sp_data['county_en'].isnull()]
+ses_sp_data = gpd.GeoDataFrame(ses_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+ses_sp_data.to_file(os.path.join(fp, 'ses_shp', 'ses_data_clean.shp'))
+'''
+
