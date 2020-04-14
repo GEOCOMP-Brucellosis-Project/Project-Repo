@@ -56,6 +56,20 @@ iran_data.loc[iran_data['county_en'] == 'Yasooj\r', 'county_en'] = 'Yasooj'
 ## Read in human data
 human_data = pd.read_csv(os.path.join(url, 'Data', 'Human_Brucellosis_2015-2018_V2.csv')).drop(['Unnamed: 18', 'Unnamed: 19'], axis = 1)
 
+human_data = human_data.rename(columns = {'Urban/Rural/Itinerant/Nomadic':'Pop_setting',
+                                          'Prepnancy':'Pregnancy',
+                                          'Occuptio':'Occupation',
+                                          'Livestock interaction history':'Livestock_int_hist',
+                                          'Livestock interaction type':'Livestock_int_type',
+                                          'Unpasteurized dairy consumption ':'Unpast_dairy',
+                                          'Other family members infection':'Fam_members_inf',
+                                          'Outbreak Year':'Outbreak_yr',
+                                          'Outbreak Month':'Outbreak_mth',
+                                          'Diagnosis Year':'Diagnosis_yr',
+                                          'Diagnosis Month':'Diagnosis_mth',
+                                          'Livestock vaccination history':'Livestock_vac_hist'})
+
+
 ## Fix duplicate provinces
 human_data.loc[human_data['Province'] == 'Khorasan jonobi', 'Province'] = 'Khorasan Jonobi'
 human_data.loc[human_data['Province'] == 'Khorasan shomali', 'Province'] = 'Khorasan Shomali'
