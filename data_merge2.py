@@ -35,12 +35,6 @@ animal_data.columns = [
 ## Create new columns storing month and year of animal testing
 animal_data[['month', 'year']] = animal_data['time_g'].str.split('/', expand = True)[[0,2]]
 
-## Sum infection data grouped by county, year, and month
-animal_data_grp = animal_data.groupby(['county', 'year', 'month'], as_index = False)[animal_data.columns[10:15]].sum().merge(animal_data)
-
-## Calculate infection rate
-animal_data_grp['animal_inf_rate'] = animal_data_grp['n_infected']/animal_data['n_sample']
-
 ## Read in Iran data
 ## This is what doesn't work from github...
 #iran_data = gpd.read_file(os.path.join(url, 'Iran_shp', 'iran_admin.shp'))
@@ -374,7 +368,17 @@ match_dict_ani.update(dict(zip(perf_matches, perf_matches)))
 
 ## Update county names in animal data and do the join
 animal_data['county'] = animal_data['county'].map(match_dict_ani).fillna(animal_data['county'])
+
 ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county', right_on = 'county_en')
+
+
+## Sum infection data grouped by county, year, and month and remerge on animal data
+ani_sp_data_grp = ani_sp_data.groupby(['county', 'year', 'month'], as_index = False)[ani_sp_data.columns[10:15]].sum()
+ani_sp_data = pd.merge(ani_sp_data, ani_sp_data_grp, how = 'left')
+
+## Calculate infection rate
+ani_sp_data['animal_inf_rate'] = ani_sp_data['n_infected']/ani_sp_data['n_sample']
+
 
 ## Write mapping dictionary to csv for ease of QA
 # pd.DataFrame.from_dict(data=match_dict_ani, orient='index').to_csv(fp + '/animal_data_mappings.csv', index_label = ['animal_county'], header = ['shp_county'])
