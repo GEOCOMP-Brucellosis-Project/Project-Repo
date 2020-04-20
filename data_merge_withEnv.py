@@ -387,7 +387,7 @@ ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county'
 ## SES Data Cleaning ##
 
 ## Read in SES data and rename columns
-ses_data = pd.read_csv(os.path.join(fp, 'Data', 'ses_data_clean.csv'))[['province', 'pop', 'hshld_size', 'ses']]
+ses_data = pd.read_csv(os.path.join(fp, 'Data', 'ses_data.csv'))[['province', 'pop', 'hshld_size', 'ses']]
 #ses_data.columns = ['province', 'pop', 'hshld_size', 'ses']
 
 ## Get province names
@@ -460,6 +460,122 @@ ani_sp_data.rename(columns={"county": "County"}, inplace=True)
 #addEnvData(human_sp_data, envData, 'year', 'month')
 addEnvData(human_sp_data, envData, 'year', 'month')
 addEnvData(ani_sp_data, envData, 'year', 'month')
+
+#%%
+
+## Joining county population data
+
+## Read in population data and clean strings
+pop_data = pd.read_csv(os.path.join(fp, 'Data', 'pop_by_county.csv'), skiprows = [1, 2, 3, 4], usecols = [0, 1])
+
+pop_data = pop_data.drop(pop_data[pop_data['Description'].str.contains("Setteled", case = False)].index)
+pop_data = pop_data.drop(pop_data[pop_data['Description'].str.contains("Settled", case = False)].index)
+
+pop_data['Description'] = pop_data['Description'].str.strip()
+pop_data['Population'] = pop_data['Population'].str.replace(',', '').astype(int)
+
+## Need to append provinces and counties from iran_data because the pop data is not separated by prov/county
+provs = iran_data['province_en']
+cts = iran_data['county_en']
+
+all_names = provs.append(cts)
+
+## Auto-match names
+matched_df = likely_matches(pop_data['Description'], all_names)
+
+## Map original data names to capitalized names
+pop_caps_mappings = map_caps(pop_data['Description'])
+iran_caps_mappings = map_caps(all_names)
+
+## Identify automatched and unmatched names
+automatched = matched_df[matched_df['matched'] != 'NULL']
+unmatched = matched_df[matched_df['matched'] == 'NULL']
+
+## Start match dictionary with automatched names
+match_dict_pop = dict(zip(automatched.index.map(pop_caps_mappings), automatched['matched'].map(iran_caps_mappings)))
+
+## Manually updated name mappings
+match_dict_man_pop = {
+    'Arzooeyeh':'Arzuiyeh',
+    'Bafgh':'Bafq',
+    'Boyerahmad':'Yasooj',
+    'Firooze':'Firuzeh',
+    'Ijerud':'Eejrud',
+    'Ivan':'Eyvan',
+    'Jovin':'Jowayin',
+    'Mayamee':'Meyami',
+    'Naeen':'Nain',
+    'Neemrooz':'Nimrouz',
+    'Neyshabur':'Nishapur',
+    'Torkaman':'Bandar-e-Torkaman',
+    'Zaveh':'Zave',
+    'Khorasan-e-Razavi':'Razavi Khorasan',
+    'Qaleh-Ganj':'Ghaleye-Ganj',
+    'Qaser-e Qand':'Ghasre Ghand',
+    'Raz & Jargalan':'Razo Jalgelan',
+    'Reegan':'Rigan',
+    'Savadkuh-e Shomali':'Savadkuh',
+    'Sireek':'Sirik',
+    'Sumaehsara':'Some\'e-Sara',
+    'Tiran & Karvan':'Tiran-o-Korun',
+    'Zeerkooh':'Zirkouh',
+    'Bandar-e-Mahshahr':'Mahshahr',
+    'Bon':'Ben',
+    'Chardavel':'Shirvan-o-Chardavol',
+    'Fonuch':'Fanouj',
+    'Keyar':'Kiaar',
+    'Qayenat':'Qaen',
+    'Qods':'Shahr-e Qods',
+    'Sibsavaran':'Sibo Soran',
+    'Kordestan':'Kurdistan'
+              }
+
+## Update dictionary with manual matches
+match_dict_pop.update(match_dict_man_pop)
+
+## Still unmatched:
+#unmatched2 = [name for name in unmatched.index.map(pop_caps_mappings) if not name in match_dict_pop.keys()]
+
+## Add identical matches to dictionary
+perf_matches = np.intersect1d(all_names, pop_data['Description'])
+match_dict_pop.update(dict(zip(perf_matches, perf_matches)))
+
+pop_data['Mapped'] = pop_data['Description'].map(match_dict_pop)
+
+## Write mappings to file for reference
+#pd.DataFrame.from_dict(data=match_dict_pop, orient='index').to_csv(fp + '/pop_data_mappings.csv', index_label = ['pop_county'], header = ['shp_county'])
+
+## Disentangling instances where provinces and county names match:
+
+## Identify duplicate names
+dup_names = pop_data[pd.DataFrame.duplicated(pop_data, 'Description')][['Description','Mapped']]
+
+## Sort by population. We know that the first entry for each name will be the province pop
+## and the second entry will be the county prop since prov pop >= county pop
+dup_vals = pop_data[pop_data['Description'].isin(dup_names['Description'])].sort_values(by = ['Description','Population'], ascending=[True, False])
+dup_vals['Geog_region'] = np.resize(['Province','County'], len(dup_vals))
+
+## Tagging each name as either province or county
+dup_pop_data_provs = dup_vals[dup_vals['Geog_region'] == 'Province']
+nondup_pop_data_provs = pop_data[pop_data['Mapped'].isin(provs.sort_values().unique()) & (~pop_data['Description'].isin(dup_pop_data_provs['Description']))]
+nondup_pop_data_provs['Geog_region'] = 'Province'
+
+## Merge back on population data - now everything is tagged to indicate province or county
+merge1 = pd.merge(nondup_pop_data_provs, dup_vals, how='outer')
+merge2 = pd.merge(merge1, pop_data, how='outer')
+
+## Drop provinces - we only want counties
+pop_data_cts_only = merge2[merge2['Geog_region']!='Province'][['Mapped','Population']]
+
+## Merge with spatial data on county name
+pop_sp_data = pd.merge(pop_data_cts_only, iran_data, how = 'outer', left_on = 'Mapped', right_on = 'county_en')
+
+## Drop erroneous row - results from original pop_data file having this entry listed twice.
+pop_sp_data = pop_sp_data[pop_sp_data['Mapped']!='Razavi Khorasan']
+
+## Need to identify the last few matches - a couple iran_data counties not matched:
+## pop_data has unmatched: "Binalood" and "Nayer"
+## Iran data has unmatched: Khusf, Nir, Northern Savadkooh, Torghabe-o-Shandiz, Urumia
 
 #%%
 '''
