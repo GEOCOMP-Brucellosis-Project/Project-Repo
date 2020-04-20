@@ -387,7 +387,7 @@ ani_sp_data = pd.merge(animal_data, iran_data, how = 'outer', left_on = 'county'
 ## SES Data Cleaning ##
 
 ## Read in SES data and rename columns
-ses_data = pd.read_csv(os.path.join(fp, 'Data', 'ses_data_clean.csv'))[['province', 'pop', 'hshld_size', 'ses']]
+ses_data = pd.read_csv(os.path.join(fp, 'Data', 'ses_data.csv'))[['province', 'pop', 'hshld_size', 'ses']]
 #ses_data.columns = ['province', 'pop', 'hshld_size', 'ses']
 
 ## Get province names
