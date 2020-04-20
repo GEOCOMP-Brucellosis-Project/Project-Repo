@@ -458,6 +458,7 @@ addGregorian(human_sp_data, 'Outbreak_yr', 'Outbreak_mth')
 ani_sp_data.rename(columns={"county": "County"}, inplace=True)
 
 #addEnvData(human_sp_data, envData, 'year', 'month')
+addEnvData(human_sp_data, envData, 'year', 'month')
 addEnvData(ani_sp_data, envData, 'year', 'month')
 
 #%%
