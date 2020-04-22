@@ -412,19 +412,6 @@ ses_data['province'] = ses_data['province'].map(match_dict_ses).fillna(ses_data[
 ## Join data
 ses_sp_data = pd.merge(ses_data, iran_data, how = 'outer', left_on = 'province', right_on = 'province_en')
 
-#%%
-
-'''
-## Write files
-human_sp_data = gpd.GeoDataFrame(human_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
-human_sp_data.to_file(os.path.join(fp, 'human_shp', 'human_data_clean.shp'))
-
-ani_sp_data = gpd.GeoDataFrame(ani_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
-ani_sp_data.to_file(os.path.join(fp, 'animal_shp', 'animal_data_clean.shp'))
-
-ses_sp_data = gpd.GeoDataFrame(ses_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
-ses_sp_data.to_file(os.path.join(fp, 'ses_shp', 'ses_data_clean.shp'))
-'''
 
 #%%
 
@@ -479,7 +466,7 @@ match_dict_man_pop = {
     'Qaser-e Qand':'Ghasre Ghand',
     'Raz & Jargalan':'Razo Jalgelan',
     'Reegan':'Rigan',
-    'Savadkuh-e Shomali':'Savadkuh',
+    'Savadkuh-e Shomali':'Northern Savadkooh',
     'Sireek':'Sirik',
     'Sumaehsara':'Some\'e-Sara',
     'Tiran & Karvan':'Tiran-o-Korun',
@@ -492,7 +479,9 @@ match_dict_man_pop = {
     'Qayenat':'Qaen',
     'Qods':'Shahr-e Qods',
     'Sibsavaran':'Sibo Soran',
-    'Kordestan':'Kurdistan'
+    'Kordestan':'Kurdistan',
+    'Binalood':'Torghabe-o-Shandiz',
+    'Nayer':'Nir'
               }
 
 ## Update dictionary with manual matches
@@ -532,12 +521,41 @@ merge2 = pd.merge(merge1, pop_data, how='outer')
 ## Drop provinces - we only want counties
 pop_data_cts_only = merge2[merge2['Geog_region']!='Province'][['Mapped','Population']]
 
+## Add independently gathered data for counties not present in the population data 
+missing_vals = pd.DataFrame([['Urumia', 736224], ['Khusf', 24922]], columns = list(['Mapped', 'Population']))
+pop_data_cts_only = pop_data_cts_only.append(missing_vals).reset_index(drop = True)
+
 ## Merge with spatial data on county name
 pop_sp_data = pd.merge(pop_data_cts_only, iran_data, how = 'outer', left_on = 'Mapped', right_on = 'county_en')
 
 ## Drop erroneous row - results from original pop_data file having this entry listed twice.
 pop_sp_data = pop_sp_data[pop_sp_data['Mapped']!='Razavi Khorasan']
 
-## Need to identify the last few matches - a couple iran_data counties not matched:
-## pop_data has unmatched: "Binalood" and "Nayer"
-## Iran data has unmatched: Khusf, Nir, Northern Savadkooh, Torghabe-o-Shandiz, Urumia
+
+#%%
+
+'''
+## Write files
+human_sp_data = gpd.GeoDataFrame(human_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+human_sp_data.to_file(os.path.join(fp, 'human_shp', 'human_data_clean.shp'))
+
+ani_sp_data = gpd.GeoDataFrame(ani_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+ani_sp_data.to_file(os.path.join(fp, 'animal_shp', 'animal_data_clean.shp'))
+
+ses_sp_data = gpd.GeoDataFrame(ses_sp_data, crs = 'EPSG:4326', geometry = 'geometry')
+ses_sp_data.to_file(os.path.join(fp, 'ses_shp', 'ses_data_clean.shp'))
+'''
+
+## Data for Katharine
+counts_by_group = human_sp_data.groupby(['county_en','province_en', 'Livestock_int_hist','Livestock_vac_hist','Pop_setting']).size().reset_index(name='count') 
+county_obs = human_sp_data.groupby(['county_en']).size().reset_index(name='county_count')
+
+count_df = pd.merge(counts_by_group, county_obs)
+
+count_df = pd.merge(count_df, pop_sp_data[['county_en','Population']], how='outer', on ='county_en')
+
+count_df['inf_rate'] = count_df['count']/count_df['Population']
+
+toWrite = pd.merge(count_df, ses_sp_data[['county_en','ses']], how='outer', on='county_en')
+
+toWrite.to_csv(os.path.join(fp, 'Data', 'dataForKatharine.csv'))
