@@ -72,9 +72,12 @@ ndvi2=ee.ImageCollection("MODIS/006/MOD13A2").select('NDVI')
 moWeather = ee.ImageCollection("ECMWF/ERA5/MONTHLY").select("mean_2m_air_temperature","total_precipitation") #Loads the ERA5 monthly collection
 
 
-weatherParams=getYearlyParams(moWeather, iran, 2008, 2018)
-ndviParams=getYearlyParams(ndvi, iran, 2008, 2018, False)
+start=2008
+end=2008
+weatherParams=getYearlyParams(moWeather, iran, start, end)
+ndviParams=getYearlyParams(ndvi, iran, start, end, False)
 elevParams=imageParams(dem, iran)
 
 allParams=weatherParams.merge(ndviParams, on='ADM2_EN').merge(elevParams, on='ADM2_EN')
-allParams.to_csv(r'allParams.csv', index=False)
+#Writing data to a .csv file
+#allParams.to_csv(r'allParams.csv', index=False)
